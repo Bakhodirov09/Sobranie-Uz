@@ -1311,4 +1311,20 @@ async def dl_from_basket_handler(message: types.Message, state: FSMContext):
         else:
             userga = "😊 Главное меню"
             await message.answer(text=userga, reply_markup=main_menu_rus)
+@dp.message_handler(state="setting", text="🖼 Asosiy menyu rasmini o'zgartirish")
+async def set_main_menu_pic(message: types.Message, state: FSMContext):
+    adminga = f"😊 Asosiy menyuning yangi rasmini yuboring."
+    await message.answer(text=adminga, reply_markup=cancel_uz)
+    await state.set_state('update_photo_main_menu')
 
+@dp.message_handler(state='update_photo_main_menu', content_types=types.ContentType.PHOTO)
+async def update_main_photo_handler(message: types.Message, state: FSMContext):
+    adminga = f""
+    try:
+        await update_main_photo(new_photo=message.photo[-1].file_id)
+        adminga = f"Menyu rasmi o'zgartirildi."
+    except Exception as e:
+        adminga = f"Kechirasiz xatolik yuz berdi qayta urinib ko'ring."
+        await dp.bot.send_message(text=f"Error:\n<b>{e}</b>\nBot: SOBRANIE")
+    await message.answer(text=adminga, reply_markup=admins_panel)
+    await state.finish()

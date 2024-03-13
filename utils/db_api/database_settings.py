@@ -282,6 +282,11 @@ async def update_user_status(chat_id):
         status=False
     ).where(ordering.c.chat_id==chat_id))
 
+async def update_main_photo(new_photo):
+    return await database.execute(query=logo.update().values(
+        photo=new_photo
+    ))
+
 async def add_history_buys(chat_id, number, miqdor, product, price, bought_at, status, pay, payment_status,go_or_order, which_filial):
     return await database.execute(query=history_buys.insert().values(
         number=number,
