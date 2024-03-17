@@ -121,5 +121,16 @@ filial_admins = sqlalchemy.Table(
     metadata,
     sqlalchemy.Column('id', sqlalchemy.Integer, primary_key=True),
     sqlalchemy.Column('which_filial', sqlalchemy.String),
+    sqlalchemy.Column('admin_name', sqlalchemy.String),
     sqlalchemy.Column('chat_id', sqlalchemy.BigInteger)
+)
+
+curer_orders = sqlalchemy.Table(
+    'curer_orders',
+    metadata,
+    sqlalchemy.Column('id', sqlalchemy.Integer, primary_key=True),
+    sqlalchemy.Column('number', sqlalchemy.BigInteger),
+    sqlalchemy.Column('chat_id', sqlalchemy.BigInteger),
+    sqlalchemy.Column('latitude', sqlalchemy.String),
+    sqlalchemy.Column('longitude', sqlalchemy.String)
 )

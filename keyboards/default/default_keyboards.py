@@ -113,8 +113,11 @@ admins_panel = ReplyKeyboardMarkup(
             KeyboardButton(text=f'🚚 Kuryerlar')
         ],
         [
-            KeyboardButton(text=f"💸 To'lov turlarini o'zgartirish."),
-            KeyboardButton(text=f"")
+            KeyboardButton(text=f"📍 Filiallar"),
+            KeyboardButton(text=f"💸 To'lov turlari")
+        ],
+        [
+            KeyboardButton(text=f"🆔 Buyurtmalar")
         ],
         [
             KeyboardButton(text=f'🍴 Menyu')
@@ -196,7 +199,7 @@ yes_no_def = ReplyKeyboardMarkup(
     keyboard=[
         [
             KeyboardButton(text='✅ Xa'),
-            KeyboardButton(text='❌ Yoq')
+            KeyboardButton(text="❌ Yo'q")
         ]
     ], resize_keyboard=True
 )
@@ -204,8 +207,8 @@ yes_no_def = ReplyKeyboardMarkup(
 yes_no_def_ru = ReplyKeyboardMarkup(
     keyboard=[
         [
-            KeyboardButton(text='✅ Xa'),
-            KeyboardButton(text='❌ Yoq')
+            KeyboardButton(text='✅ Да'),
+            KeyboardButton(text='❌ Нет')
         ]
     ], resize_keyboard=True
 )
@@ -293,4 +296,37 @@ go_or_ordering_ru = ReplyKeyboardMarkup(
         ]
     ], resize_keyboard=True
 )
+
+filials_bttn = ReplyKeyboardMarkup(
+    keyboard=[
+        [
+            KeyboardButton(text=f"➕📍 Filial qo'shish"),
+            KeyboardButton(text=f"📍 Barcha filiallar")
+        ],
+        [
+            KeyboardButton(text=f"👐 Filial ochib qoyish"),
+            KeyboardButton(text=f"🚫📍 Filial yopish")
+        ],
+        [
+            KeyboardButton(text=f'👤 Filial admin qoshish'),
+            KeyboardButton(text=f'👤🚫 Filial admin olib tashlash'),
+        ],
+        [
+            KeyboardButton(text="🗑📍 Filial olib tashlash"),
+            KeyboardButton(text=f"❌ Bekor Qilish")
+        ]
+    ], resize_keyboard=True
+)
+
+send_location = ReplyKeyboardMarkup(
+    keyboard=[
+        [
+            KeyboardButton(text=f"📍 Joylashuv yuborish", request_location=True)
+        ],
+        [
+            KeyboardButton(text=f"❌ Bekor Qilish")
+        ]
+    ], resize_keyboard=True
+)
+
 

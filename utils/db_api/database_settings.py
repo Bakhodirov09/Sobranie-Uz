@@ -1,3 +1,4 @@
+from lang import translate_uz_to_ru
 from main.database_set import database
 from main.models import *
 
@@ -32,11 +33,6 @@ async def get_user_miqdor(chat_id, fast_food, menu_name):
 
 async def get_user_basket(chat_id):
     return await database.fetch_all(query=basket.select().where(basket.c.chat_id==chat_id))
-
-async def update_curer_status(chat_id):
-    return await database.execute(query=curers.update().values(
-        status='Work '
-    ).where(curers.c.chat_id==chat_id))
 
 async def update_product_miqdor(miqdor, product_name, chat_id, menu_name, narx):
     new_miqdor = int(miqdor) + 1
@@ -82,6 +78,13 @@ async def get_filial(filial_name):
 
 async def get_filial_admin(filial_name):
     return await database.fetch_all(query=filial_admins.select().where(filial_admins.c.which_filial==filial_name))
+
+async def delete_filial_admin(data: dict):
+    return await database.execute(query=filial_admins.delete().where(
+        filial_admins.c.which_filial==data['filial_name'],
+        filial_admins.c.admin_name==data['admin_name']
+    ))
+
 
 async def add_meal_to_menu_ru(data: dict):
     return await database.execute(query=fast_food_menu.insert().values(
@@ -162,6 +165,22 @@ async def add_admin_to_db(data: dict):
     return await database.execute(query=admins.insert().values(
         chat_id=data['chat_id'],
         name=data['name']
+    ))
+
+async def add_admin_filial(data: dict):
+    await database.execute(query=filial_admins.insert().values(
+        which_filial=data['filial_name'],
+        chat_id=data['chat_id'],
+        admin_name=data['admin_name']
+    ))
+    await database.execute(query=filial_admins.insert().values(
+        which_filial=translate_uz_to_ru(text=data['filial_name']),
+        chat_id=data['chat_id'],
+        admin_name=data['admin_name']
+    ))
+    await database.execute(query=admins.insert().values(
+        chat_id=data['chat_id'],
+        name=data['admin_name']
     ))
 
 async def get_all_admins():
@@ -313,21 +332,109 @@ async def add_count_to_curer(chat_id):
     last_num = await database.fetch_one(query=curers.select().where(curers.c.chat_id==chat_id))
     num = 0
     last = last_num[3]
-    if last[-1] != " ":
+    if int(last[-1]) >= 1:
         num = last[-1]
         return await database.execute(query=curers.update().values(
-            status=f"Working {int(num) + 1}"
+            status=f"Work {int(num) + 1}"
         ).where(curers.c.chat_id==chat_id))
     else:
         return await database.execute(query=curers.update().values(
-            status=f"Working 1"
+            status=f"Work 1"
         ).where(curers.c.chat_id==chat_id))
 
 async def get_about_product(random_number):
     return await database.fetch_all(query=history_buys.select().where(history_buys.c.number==random_number))
 
-async def update_buy(random_number):
+async def update_buy(random_number, chat_id):
+    curer_num = await database.fetch_one(query=curers.select().where(curers.c.chat_id==chat_id))
+    curer_number = int(curer_num['status'][-1])
+    if int(curer_number) == 1:
+        await database.execute(
+            history_buys.update()
+            .values(
+                status="Foydalanuvchiga topshirilgan.",
+                payment_status="To'langan"
+            )
+            .where(history_buys.c.number == int(random_number))
+        )
+        await database.execute(
+            curers.update()
+            .values(status='Not Work')
+            .where(curers.c.chat_id == chat_id)
+        )
+    elif int(curer_number) > 1:
+        await database.execute(
+            history_buys.update()
+            .values(
+                status="Foydalanuvchiga topshirilgan.",
+                payment_status="To'langan"
+            )
+            .where(history_buys.c.number == int(random_number))
+        )
+        await database.execute(
+            curers.update()
+            .values(status=f"Work {curer_number - 1}")
+            .where(curers.c.chat_id == chat_id)
+        )
+
+async def update_buy_filial(number: int, chat_id: int):
     return await database.execute(query=history_buys.update().values(
-        status="Foydalanuvchiga topshirilgan.",
+        status=f'Olib ketish mumkin'
+    ).where(history_buys.c.number==number, history_buys.c.chat_id==chat_id))
+
+async def update_buy_filial2(number, chat_id):
+    return await database.execute(query=history_buys.update().values(
+        status=f'Xaridorga topshirilgan',
         payment_status="To'langan"
-    ).where(history_buys.c.number==random_number))
+    ).where(history_buys.c.number==number, history_buys.c.chat_id==chat_id))
+
+async def add_order_curer(number, chat_id, latitude, longitude):
+    return await database.execute(query=curer_orders.insert().values(
+        number=number,
+        chat_id=chat_id,
+        latitude=latitude,
+        longitude=longitude
+    ))
+
+async def get_close_filials():
+    return await database.fetch_all(query=filials.select().where(filials.c.is_open==False, filials.c.lang=='uz'))
+
+async def add_new_filial(data):
+    await database.execute(query=filials.insert().values(
+        filial_name=data['filial_name'],
+        latitude=f"{data['latitude']}a",
+        longitude=f"{data['longitude']}a",
+        lang="uz",
+        is_open=True
+    ))
+    await database.execute(query=filials.insert().values(
+        filial_name=data['filial_name_ru'],
+        latitude=f"{data['latitude']}a",
+        longitude=f"{data['longitude']}a",
+        lang="ru",
+        is_open=True
+    ))
+
+async def close_filial(filial_name, filial_name_ru):
+    await database.execute(query=filials.update().values(
+        is_open=False
+    ).where(filials.c.filial_name==filial_name))
+    await database.execute(query=filials.update().values(
+        is_open=False
+    ).where(filials.c.filial_name==filial_name_ru))
+
+async def del_filial(data: dict):
+    await database.execute(query=filials.delete().where(filials.c.filial_name==data['filial_name_uz']))
+    await database.execute(query=filials.delete().where(filials.c.filial_name==data['filial_name_ru']))
+async def open_filial(filial_name, filial_name_ru):
+    await database.execute(query=filials.update().values(
+        is_open=True
+    ).where(filials.c.filial_name==filial_name))
+    await database.execute(query=filials.update().values(
+        is_open=True
+    ).where(filials.c.filial_name==filial_name_ru))
+
+async def get_order_with_id(order_number):
+    return await database.fetch_all(query=history_buys.select().where(
+        history_buys.c.number==order_number
+    ))

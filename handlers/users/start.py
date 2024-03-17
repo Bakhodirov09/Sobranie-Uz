@@ -1119,7 +1119,7 @@ async def get_delete_curer_name_handler(message: types.Message, state: FSMContex
     await message.answer(text=adminga, reply_markup=yes_no_def)
     await state.set_state('really_del')
 
-@dp.message_handler(text=f"💸 To'lov turlarini o'zgartirish.")
+@dp.message_handler(text=f"💸 To'lov turlari")
 async def change_payment_methods_handler(message: types.Message, state: FSMContext):
     if await is_admin(chat_id=message.chat.id):
         adminga = f"😊 Quyidagilardan birini tanlang."
@@ -1265,8 +1265,9 @@ async def user_dont_want_wait_handler(message: types.Message, state: FSMContext)
     curerga += f"➕ Ja'mi: {total}"
     bttn = InlineKeyboardMarkup(row_width=1)
     bttn.insert(InlineKeyboardButton(text=f"✅ Mahsulot yetkazildi", callback_data=f"{message.chat.id}_{random_number}_curer"))
+    print(ishsiz_curer)
     if ishsiz_curer:
-        await update_curer_status(chat_id=ishsiz_curer['chat_id'])
+        await add_count_to_curer(chat_id=ishsiz_curer['chat_id'])
         await dp.bot.send_message(chat_id=ishsiz_curer['chat_id'], text=curerga, reply_markup=bttn)
         await dp.bot.send_location(chat_id=ishsiz_curer['chat_id'], longitude=data['longitude'], latitude=data['latitude'])
         if lang[3] == "uz":
@@ -1328,3 +1329,265 @@ async def update_main_photo_handler(message: types.Message, state: FSMContext):
         await dp.bot.send_message(text=f"Error:\n<b>{e}</b>\nBot: SOBRANIE")
     await message.answer(text=adminga, reply_markup=admins_panel)
     await state.finish()
+
+@dp.message_handler(text=f"📍 Filiallar")
+async def filials_handler(message: types.Message, state: FSMContext):
+    if await is_admin(chat_id=message.chat.id):
+        userga = f"😊 Quyidagilardan birini tanlang."
+        await message.answer(text=userga, reply_markup=filials_bttn)
+        await state.set_state('setting_filials')
+    else:
+        userga = f"😕 Kechirasiz siz adminlik huquqiga ega emassiz.\nBu funksiya faqat bot adminlar uchun!"
+        await message.answer(text=userga, reply_markup=main_menu_uzb)
+
+@dp.message_handler(state='setting_filials')
+async def setting_filials_handler(message: types.Message, state: FSMContext):
+    if message.text[0] == "➕":
+        adminga = f"‼️ Yangi filial qayerda joylashgan?"
+        await message.answer(text=adminga, reply_markup=cancel_uz)
+        await state.set_state('get_new_filial_name')
+    elif message.text[0] == "📍":
+        filials = await get_all_filials(lang="uz")
+        if filials:
+            adminga = f"😊 Barcha filiallar"
+            await message.answer(text=adminga)
+            for filial in filials:
+                await message.answer_location(latitude=filial['latitude'][0:-1], longitude=filial['longitude'][0:-1])
+                await message.answer(text=f"📍 <b>{filial['filial_name']}</b> Filiali", reply_markup=admins_panel)
+        await state.finish()
+    elif message.text[0] == "🗑":
+        adminga = f"‼️ Qaysi filialni olib tashlamoqchisiz?"
+        filials = await get_all_filials(lang="uz")
+        if filials:
+            all_filials = ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
+            for filial in filials:
+                all_filials.insert(KeyboardButton(text=f"{filial['filial_name']}"))
+            all_filials.insert(KeyboardButton(text=f"❌ Bekor Qilish"))
+            await message.answer(text=adminga, reply_markup=all_filials)
+            await state.set_state('del_filial')
+        else:
+            await message.answer(text=f'😕 Kechirasiz ochiq filiallar mavjud emas', reply_markup=admins_panel)
+            await state.finish()
+    elif message.text[0] == "🚫":
+        adminga = f"✍️ Qaysi filialni yopib qo'ymoqchisiz?"
+        filials = ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
+        for filial in await get_all_filials(lang='uz'):
+            filials.insert(KeyboardButton(text=filial['filial_name']))
+        filials.insert(KeyboardButton(text=f"❌ Bekor Qilish"))
+        await message.answer(text=adminga, reply_markup=filials)
+        await state.set_state('close_filial')
+    elif message.text[0] == "👐":
+        closed_filials = await get_close_filials()
+        if closed_filials:
+            adminga = f"🏦 Qaysi filialni ochmoqchisiz?"
+            close_filials = ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
+            for filial in closed_filials:
+                close_filials.insert(KeyboardButton(text=f"{filial['filial_name']}"))
+            close_filials.insert(KeyboardButton(text=f"❌ Bekor Qilish"))
+            await message.answer(text=adminga, reply_markup=close_filials)
+            await state.set_state('open_filial')
+        else:
+            adminga = f"😕 Kechirasiz hozirda yopiq filiallar mavjud emas"
+            await message.answer(text=adminga, reply_markup=admins_panel)
+            await state.finish()
+    elif message.text[0:2] == "👤🚫":
+        filials = ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
+        for filial in await get_all_filials(lang='uz'):
+            filials.insert(KeyboardButton(text=f"{filial['filial_name']}"))
+        filials.insert(KeyboardButton(text=f"❌ Bekor Qilish"))
+        await message.answer(text=f'🤔 Qaysi filial adminini olib tashlaysiz?', reply_markup=filials)
+        await state.set_state('del_filial_admin')
+    elif message.text[0] == "👤":
+        filials = ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
+        for filial in await get_all_filials(lang='uz'):
+            filials.insert(KeyboardButton(text=f"{filial['filial_name']}"))
+        filials.insert(KeyboardButton(text=f"❌ Bekor Qilish"))
+        await message.answer(text=f"🤔 Qaysi filialga admin qo'shmoqchisiz?", reply_markup=filials)
+        await state.set_state('select_filial_add_admin')
+    else:
+        adminga = f"404 function not found!!!!"
+        await message.answer(text=adminga, reply_markup=admins_panel)
+        await state.finish()
+
+@dp.message_handler(state='get_new_filial_name')
+async def get_new_filial_name_handler(message: types.Message, state: FSMContext):
+    await state.update_data({
+        'filial_name': message.text,
+        'filial_name_ru': translate_uz_to_ru(text=message.text)
+    })
+    adminga = f"📍 Yangi filial joylashuvini yuboring"
+    await message.answer(text=adminga, reply_markup=send_location)
+    await state.set_state('get_loc_new_filial')
+
+@dp.message_handler(state=f"get_loc_new_filial", content_types=types.ContentType.LOCATION)
+async def new_filial_loc(message: types.Message, state: FSMContext):
+    await state.update_data({
+        'latitude': message.location.latitude,
+        'longitude': message.location.longitude
+    })
+    data = await state.get_data()
+    await add_new_filial(data=data)
+    adminga = f"✅ Yangi filial qo'shildi"
+    await message.answer(text=adminga, reply_markup=admins_panel)
+    await state.finish()
+
+@dp.message_handler(state=f'del_filial')
+async def delete_filial_handler(message: types.Message, state: FSMContext):
+    await state.update_data({
+        'filial_name_uz': message.text,
+        'filial_name_ru': translate_uz_to_ru(text=message.text)
+    })
+    await message.answer(text=f"🤔 Haqiqatdan ham: <b>{message.text}</b> filialini ochirmoqchimisiz?", reply_markup=yes_no_def)
+    await state.set_state('really_del_filal')
+
+@dp.message_handler(state=f"really_del_filial")
+async def really_delete_filial(message: types.Message, state: FSMContext):
+    adminga = f""
+    if message.text[0] == "✅":
+        data = await state.get_data()
+        await del_filial(data=data)
+        adminga = f"{data['filial_name']} olib tashlandi"
+    else:
+        adminga = f"❌ Bekor qilindi"
+
+    await message.answer(text=adminga, reply_markup=admins_panel)
+    await state.finish()
+
+@dp.message_handler(state=f'close_filial')
+async def close_filial_handler(message: types.Message, state: FSMContext):
+    await close_filial(filial_name=message.text, filial_name_ru=translate_uz_to_ru(text=message.text))
+    await message.answer(text=f"✅ {message.text} yopildi", reply_markup=admins_panel)
+    await state.finish()
+
+@dp.message_handler(state='open_filial')
+async def open_filial_handler(message: types.Message, state: FSMContext):
+    await open_filial(filial_name=message.text, filial_name_ru=translate_uz_to_ru(text=message.text))
+    await message.answer(text=f"✅ {message.text} ochildi", reply_markup=admins_panel)
+    await state.finish()
+
+@dp.message_handler(state='del_filial_admin')
+async def del_filial_admin_handler(message: types.Message, state: FSMContext):
+    admins = await get_filial_admin(filial_name=message.text)
+    if admins:
+        await state.update_data({
+            'filial_name': message.text
+        })
+        filial_admins_bttn = ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
+        for filial_admin in admins:
+            filial_admins_bttn.insert(KeyboardButton(text=f"{filial_admin['admin_name']}"))
+        filial_admins_bttn.insert(KeyboardButton(text=f"❌ Bekor Qilish"))
+        await message.answer(text=f"‼️ Adminlardan birini tanlang.", reply_markup=filial_admins_bttn)
+        await state.set_state('select_filial_admin')
+    else:
+        await message.answer(text=f'‼️ {message.text}da adminlar mavjud emas!')
+        await state.finish()
+
+@dp.message_handler(state=f"select_filial_admin")
+async def filial_admin_selected_handler(message: types.Message, state: FSMContext):
+    await state.update_data({
+        'admin_name': message.text
+    })
+    data = await state.get_data()
+    try:
+        await delete_filial_admin(data=data)
+        await message.answer(text=f"✅ <b>{data['admin_name']}</b> <b>{data['filial_name']}</b> adminlar orasidan olib tashlandi.", reply_markup=admins_panel)
+    except Exception as e:
+        await dp.bot.send_message(chat_id=-1002075245072, text=f"Error:\n<b>{e}</b>\nBot: SOBRANIE")
+        await message.answer(text=f"❌ Kechirasiz xatolik yuz berdi.Iltimos qayta urinib ko'ring.", reply_markup=admins_panel)
+    await state.finish()
+
+@dp.message_handler(state='select_filial_add_admin')
+async def select_filial_add_admin_handler(message: types.Message, state: FSMContext):
+    await state.update_data({
+        'filial_name': message.text
+    })
+    await message.answer(text=f"✍️ {message.text}ning yangi admining ismini kiriting.", reply_markup=cancel_uz)
+    await state.set_state('enter_new_filial_admin_name')
+
+@dp.message_handler(state=f"enter_new_filial_admin_name")
+async def enter_new_filial_admin_name_handler(message: types.Message, state: FSMContext):
+    await state.update_data({
+        'admin_name': message.text
+    })
+    await message.answer(text=f"‼️ Yangi admin chat_id raqamini kiriting!", reply_markup=cancel_uz)
+    await state.set_state('new_admin_chat_id_filial')
+
+@dp.message_handler(state='new_admin_chat_id_filial')
+async def new_admin_chat_id_filial_handler(message: types.Message, state: FSMContext):
+    try:
+        await state.update_data({
+            'chat_id': int(message.text)
+        })
+        data = await state.get_data()
+        await add_admin_filial(data=data)
+        await dp.bot.send_message(chat_id=int(message.text), text=f"🥳 Tabriklaymiz siz {data['filial_name']} filimizda adminlik huquqiga ega bo'ldingiz.", reply_markup=admins_panel)
+        await message.answer(text=f"✅ {data['filial_name']}ga yangi admin qo'shildi", reply_markup=admins_panel)
+    except Exception as e:
+        await dp.bot.send_message(chat_id=-1002075245072, text=f"Error:\n<b>{e}</b>\nBot: SOBRANIE")
+        await message.answer(text=f"❌ Kechirasiz xatolik yuz berdi.Iltimos qayta urinib ko'ring.",
+                             reply_markup=admins_panel)
+    await state.finish()
+
+@dp.message_handler(text="🆔 Buyurtmalar")
+async def orders_handler(message: types.Message, state: FSMContext):
+    if await is_admin(chat_id=message.chat.id):
+        await message.answer(text=f'🆔 Buyurtma raqamini kiriting.', reply_markup=cancel_uz)
+        await state.set_state(f"get_order_with_id")
+    else:
+        await message.answer(text=f"😕 Kechirasiz siz adminlik huquqiga ega emassiz.Bu funksiya faqat adminlar uchun.", reply_markup=main_menu_uzb)
+        await state.finish()
+
+@dp.message_handler(state="get_order_with_id")
+async def get_order_with_id_handler(message: types.Message, state: FSMContext):
+    order = await get_order_with_id(order_number=int(message.text))
+    if order:
+        adminga = f""
+        lang = f""
+        chat_id = 0
+        for chat in order:
+            chat_id = chat['chat_id']
+            break
+        user = await get_user(chat_id=chat_id)
+        if user[3] == "uz":
+            lang = f"🇺🇿 Uzbek Tili"
+        else:
+            lang = f"🇷🇺 Rus tili"
+        adminga += f"""
+👤 To'liq ism: {user['full_name']}
+👤 Username: {user['username']}
+🌐 Til: {lang}
+📞 Telefon raqam: {user['phone_number']}
+🆔 Buyurtma raqami: {message.text}
+🛍 Mahsulotlar:\n
+"""
+        total = 0
+        for orders in order:
+            total += orders['price'] * orders['miqdor']
+            adminga += f"""
+<b>{orders['product']}</b> <b>{orders['price']}</b> * <b>{orders['miqdor']}</b> = <b>{int(orders['price']) * int(orders['miqdor'])}</b>
+"""
+        pay_status = []
+        for method in order:
+            if method['payment_status'] == "To'langan":
+                pay_status.append(f"✅ To'langan")
+            else:
+                pay_status.append(f"❌ To'lanmagan")
+
+            if method['status'] == "Olib ketish mumkin":
+                pay_status.append(f'✅ Olib ketish mumkin')
+            elif method['status'] == "Tayyorlanmoqda":
+                pay_status.append(f'❌ Tayyorlanmoqda')
+            elif method['status'] == "Xaridorga topshirilgan":
+                pay_status.append(f'{method["status"]}')
+
+            adminga += f"💸 To'lov Turi: {method['payment_method']}\n"
+            break
+        adminga += f"💰 Ja'mi: {total}\n"
+        adminga += f"💲 To'lov Holati: {pay_status[0]}\n"
+        adminga += f"‼️ Status: <b>{pay_status[1]}</b>"
+        bttn = InlineKeyboardMarkup(row_width=1)
+        if pay_status[1] == f"✅ Olib ketish mumkin":
+            bttn.insert(InlineKeyboardButton(text=f'✅ Xaridorga topshirildi', callback_data=f'{chat_id}_{message.text}_filial_gave'))
+        await message.answer(text=f"Buyurtma", reply_markup=admins_panel)
+        await message.answer(text=adminga, reply_markup=bttn)
+        await state.finish()
