@@ -80,9 +80,12 @@ async def get_filial_admin(filial_name):
     return await database.fetch_all(query=filial_admins.select().where(filial_admins.c.which_filial==filial_name))
 
 async def delete_filial_admin(data: dict):
-    return await database.execute(query=filial_admins.delete().where(
+    await database.execute(query=filial_admins.delete().where(
         filial_admins.c.which_filial==data['filial_name'],
         filial_admins.c.admin_name==data['admin_name']
+    ))
+    await database.execute(query=admins.delete().where(
+        admins.c.name==data['admin_name']
     ))
 
 
@@ -304,6 +307,12 @@ async def update_user_status(chat_id):
 async def update_main_photo(new_photo):
     return await database.execute(query=logo.update().values(
         photo=new_photo
+    ))
+
+async def add_number_buys(number, chat_id):
+    return await database.execute(query=order_number.insert().values(
+        number=number,
+        chat_id=chat_id
     ))
 
 async def add_history_buys(chat_id, number, miqdor, product, price, bought_at, status, pay, payment_status,go_or_order, which_filial):

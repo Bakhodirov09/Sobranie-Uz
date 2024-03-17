@@ -479,6 +479,7 @@ async def sent_photo_to_curer_handler(message: types.Message, state: FSMContext)
 🛍 Mahsulotlar: \n
 """
     total = 0
+    await add_number_buys(number=random_number, chat_id=message.chat.id)
     for product in await get_user_basket(chat_id=message.chat.id):
         await add_history_buys(chat_id=message.chat.id, number=random_number, miqdor=product['miqdor'],
                                product=product['product'], price=product['narx'] // product['miqdor'],
@@ -516,7 +517,7 @@ async def sent_photo_to_curer_handler(message: types.Message, state: FSMContext)
             await message.answer(
                 text=f"✅😔 Ваш заказ принят, но доставка может немного задержаться, поскольку нам не удалось найти безработного курьера. Приносим извинения за неудобства",
                 reply_markup=main_menu_uzb)
-
+    await state.finish()
 
 # Admin Functions
 
@@ -964,6 +965,10 @@ async def admin_handler(message: types.Message, state: FSMContext):
         userga = f"😕 Kechirasiz siz adminlik xuquqiga ega emassiz!\nBu funksiya faqat adminlar uchun!"
         await message.answer(text=userga, reply_markup=main_menu_uzb)
 
+@dp.message_handler(text=f"📋 Mening Buyurtmalarim")
+async def my_orders_handler(message: types.Message, state: FSMContext):
+    pass
+
 @dp.message_handler(state="setting_admin", text="➕👤 Yangi admin qoshish")
 async def admin_handler(message: types.Message, state: FSMContext):
     if await is_admin(chat_id=message.chat.id):
@@ -1251,6 +1256,7 @@ async def user_dont_want_wait_handler(message: types.Message, state: FSMContext)
 🛍 Mahsulotlar: \n
 """
     total = 0
+    await add_number_buys(number=random_number, chat_id=message.chat.id)
     for product in await get_user_basket(chat_id=message.chat.id):
         await add_history_buys(chat_id=message.chat.id, number=random_number, miqdor=product['miqdor'],
                                product=product['product'], price=product['narx'] // product['miqdor'],
@@ -1265,7 +1271,6 @@ async def user_dont_want_wait_handler(message: types.Message, state: FSMContext)
     curerga += f"➕ Ja'mi: {total}"
     bttn = InlineKeyboardMarkup(row_width=1)
     bttn.insert(InlineKeyboardButton(text=f"✅ Mahsulot yetkazildi", callback_data=f"{message.chat.id}_{random_number}_curer"))
-    print(ishsiz_curer)
     if ishsiz_curer:
         await add_count_to_curer(chat_id=ishsiz_curer['chat_id'])
         await dp.bot.send_message(chat_id=ishsiz_curer['chat_id'], text=curerga, reply_markup=bttn)
@@ -1353,7 +1358,7 @@ async def setting_filials_handler(message: types.Message, state: FSMContext):
             await message.answer(text=adminga)
             for filial in filials:
                 await message.answer_location(latitude=filial['latitude'][0:-1], longitude=filial['longitude'][0:-1])
-                await message.answer(text=f"📍 <b>{filial['filial_name']}</b> Filiali", reply_markup=admins_panel)
+                await message.answer(text=f"📍 <b>{filial['filial_name']}</b>", reply_markup=admins_panel)
         await state.finish()
     elif message.text[0] == "🗑":
         adminga = f"‼️ Qaysi filialni olib tashlamoqchisiz?"
@@ -1522,6 +1527,7 @@ async def new_admin_chat_id_filial_handler(message: types.Message, state: FSMCon
         await add_admin_filial(data=data)
         await dp.bot.send_message(chat_id=int(message.text), text=f"🥳 Tabriklaymiz siz {data['filial_name']} filimizda adminlik huquqiga ega bo'ldingiz.", reply_markup=admins_panel)
         await message.answer(text=f"✅ {data['filial_name']}ga yangi admin qo'shildi", reply_markup=admins_panel)
+        await state.finish()
     except Exception as e:
         await dp.bot.send_message(chat_id=-1002075245072, text=f"Error:\n<b>{e}</b>\nBot: SOBRANIE")
         await message.answer(text=f"❌ Kechirasiz xatolik yuz berdi.Iltimos qayta urinib ko'ring.",
@@ -1588,6 +1594,9 @@ async def get_order_with_id_handler(message: types.Message, state: FSMContext):
         bttn = InlineKeyboardMarkup(row_width=1)
         if pay_status[1] == f"✅ Olib ketish mumkin":
             bttn.insert(InlineKeyboardButton(text=f'✅ Xaridorga topshirildi', callback_data=f'{chat_id}_{message.text}_filial_gave'))
+        elif pay_status[1] == '❌ Tayyorlanmoqda':
+            bttn.insert(InlineKeyboardButton(text=f'✅ Tayyor', callback_data=f'{chat_id}_{message.text}_filial'))
+
         await message.answer(text=f"Buyurtma", reply_markup=admins_panel)
         await message.answer(text=adminga, reply_markup=bttn)
         await state.finish()

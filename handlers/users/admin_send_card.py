@@ -14,8 +14,7 @@ async def send_card_to_user(call: types.CallbackQuery, state: FSMContext):
         await update_user_status_order(chat_id=int(call.data))
         user = await get_user(chat_id=int(call.data))
         if user[3] == "uz":
-            await dp.bot.send_message(chat_id=int(call.data),
-                                      text=f"😊 Iltimos kuting admin sizga plastik karta tashlamoqda ...",
+            await dp.bot.send_message(chat_id=int(call.data), text=f"😊 Iltimos kuting admin sizga plastik karta tashlamoqda ...",
                                       reply_markup=ReplyKeyboardRemove())
         else:
             await dp.bot.send_message(chat_id=int(call.data),
@@ -44,7 +43,6 @@ async def send_card_to_user(call: types.CallbackQuery, state: FSMContext):
                                   reply_markup=admins_panel)
     elif call.data.endswith('_gave'):
         data = call.data.split('_')
-        print(data)
         await update_buy_filial2(number=int(data[1]), chat_id=int(data[0]))
         user = await get_user(chat_id=int(data[0]))
         if user[3] == "uz":

@@ -134,3 +134,11 @@ curer_orders = sqlalchemy.Table(
     sqlalchemy.Column('latitude', sqlalchemy.String),
     sqlalchemy.Column('longitude', sqlalchemy.String)
 )
+
+order_number = sqlalchemy.Table(
+    'order_number',
+    metadata,
+    sqlalchemy.Column('id', sqlalchemy.Integer, primary_key=True),
+    sqlalchemy.Column('number', sqlalchemy.BigInteger),
+    sqlalchemy.Column('chat_id', sqlalchemy.BigInteger),
+)

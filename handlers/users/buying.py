@@ -11,7 +11,7 @@ from loader import dp, types
 from utils.db_api.database_settings import get_user, add_new_location_to_db, select_payments, get_user_locations, \
     add_user_to_order, bosh_curer, delete_user_basket, get_all_curers, get_user_basket, \
     get_all_filials, get_lat_long, get_filial, get_filial_admin, get_all_admins, add_history_buys, add_order_curer, \
-    add_count_to_curer, get_order_with_id
+    add_count_to_curer, get_order_with_id, add_number_buys
 
 
 @dp.message_handler(state='in_basket', text="🛍 Buyurtma berish")
@@ -233,6 +233,7 @@ async def paying_handler(message: types.Message, state: FSMContext):
     for product in await get_user_basket(chat_id=message.chat.id):
         total += int(product['narx'])
         curerga += f"<b>{product['product']}</b> {int(product['narx']) // int(product['miqdor'])} * {product['miqdor']} = {product['narx']}\n"
+        await add_number_buys(chat_id=message.chat.id, number=random_number)
         if data.get('go_or_order'):
             await add_history_buys(chat_id=message.chat.id, number=random_number, miqdor=product['miqdor'],
                                    product=product['product'], price=product['narx'] // product['miqdor'],
