@@ -1261,7 +1261,7 @@ async def user_dont_want_wait_handler(message: types.Message, state: FSMContext)
         await add_history_buys(chat_id=message.chat.id, number=random_number, miqdor=product['miqdor'],
                                product=product['product'], price=product['narx'] // product['miqdor'],
                                bought_at=message.date, status='Yetkazilmoqda', pay=data['pay'],
-                               payment_status="To'lanmagan", go_or_order='Buyurtma qilingan', which_filial='null')
+                               payment_status="To'lanmagan", go_or_order='Dostavka', which_filial='null')
         total += int(product['narx'])
         curerga += f"<b>{product['product']}</b> \t|\t <b>{product['miqdor']}</b> \t|\t <b>{product['narx'] // product['miqdor']}</b> * <b>{product['miqdor']}</b> = <b>{product['narx']}</b>\n"
     await update_user_status(chat_id=message.chat.id)
