@@ -12,6 +12,7 @@ from keyboards.inline.inline_keyboards import *
 from loader import dp
 from states.states import *
 
+
 @dp.message_handler(CommandStart())
 async def start_handler(message: types.Message, state: FSMContext):
     if await is_admin(chat_id=message.chat.id):
@@ -34,6 +35,7 @@ async def start_handler(message: types.Message, state: FSMContext):
             await message.answer(text=userga, reply_markup=lang_select)
             await Register_States.select_lang.set()
 
+
 @dp.callback_query_handler(state=Register_States.select_lang)
 async def get_language_handler(call: types.CallbackQuery, state: FSMContext):
     await call.message.delete()
@@ -47,6 +49,7 @@ async def get_language_handler(call: types.CallbackQuery, state: FSMContext):
         userga = f"🇷🇺 Выбран русский язык.\n✍️ Введите свое полное имя"
         await call.message.answer(text=userga, reply_markup=ReplyKeyboardRemove())
     await Register_States.full_name.set()
+
 
 @dp.message_handler(state=Register_States.full_name)
 async def enter_full_name_handler(message: types.Message, state: FSMContext):
@@ -62,6 +65,7 @@ async def enter_full_name_handler(message: types.Message, state: FSMContext):
         userga = f"📞 Пожалуйста: {message.text} Отправьте свой номер телефона через кнопку"
         await message.answer(text=userga, reply_markup=send_phone_number_rus)
     await Register_States.phone_number.set()
+
 
 @dp.message_handler(state=Register_States.phone_number, content_types=types.ContentType.CONTACT)
 async def send_phone_number_handler(message: types.Message, state: FSMContext):
@@ -99,11 +103,11 @@ async def send_phone_number_handler(message: types.Message, state: FSMContext):
             await message.answer(text=userga, reply_markup=ReplyKeyboardRemove())
     await state.finish()
 
+
 # Uzbek Functions
 
 @dp.message_handler(text="🍴 Menyu")
 async def open_menu_handler(message: types.Message, state: FSMContext):
-
     photo = await get_main_menu_logo()
     lang = await get_user(chat_id=message.chat.id)
     menyu = InlineKeyboardMarkup(row_width=2)
@@ -124,9 +128,9 @@ async def open_menu_handler(message: types.Message, state: FSMContext):
     await message.answer_photo(photo=photo['photo'], reply_markup=menyu)
     await state.set_state('menu')
 
+
 @dp.message_handler(text="🍴 Меню")
 async def open_menu_handler(message: types.Message, state: FSMContext):
-
     photo = await get_main_menu_logo()
     menyu_ru = InlineKeyboardMarkup(row_width=2)
     userga = f"😋 Наше меню"
@@ -137,6 +141,7 @@ async def open_menu_handler(message: types.Message, state: FSMContext):
     await message.answer(text=userga, reply_markup=main_menu_back_ru)
     await message.answer_photo(photo=photo['photo'], reply_markup=menyu_ru)
     await state.set_state('menu')
+
 
 @dp.callback_query_handler(state='menu')
 async def menu_handler(call: types.CallbackQuery, state: FSMContext):
@@ -195,8 +200,9 @@ Mahsulot Haqida: <b>{fast_food['description']}</b>
 О продукте: <b>{fast_food['description']}</b>
 💰 Цена: {price}
 """
-            await call.message.answer_photo(photo=photo, caption=userga, reply_markup=await plus_minus_def_ru(0,0))
+            await call.message.answer_photo(photo=photo, caption=userga, reply_markup=await plus_minus_def_ru(0, 0))
         await state.set_state('got_food')
+
 
 @dp.callback_query_handler(state='got_food', text="plus")
 async def plus_handler(call: types.CallbackQuery, state: FSMContext):
@@ -208,9 +214,12 @@ async def plus_handler(call: types.CallbackQuery, state: FSMContext):
     })
     lang = await get_user(chat_id=call.message.chat.id)
     if await is_in_basket(food_name=data['food_name'], menu_name=data['menu_name'], chat_id=call.message.chat.id):
-        miqdor = await get_user_miqdor(chat_id=call.message.chat.id, fast_food=data['food_name'], menu_name=data['menu_name'])
-        await update_product_miqdor(miqdor=miqdor[2], product_name=data['food_name'], chat_id=call.message.chat.id, narx=data['price'], menu_name=data['menu_name'])
-        new_miq = await get_user_miqdor(chat_id=call.message.chat.id, fast_food=data['food_name'], menu_name=data['menu_name'])
+        miqdor = await get_user_miqdor(chat_id=call.message.chat.id, fast_food=data['food_name'],
+                                       menu_name=data['menu_name'])
+        await update_product_miqdor(miqdor=miqdor[2], product_name=data['food_name'], chat_id=call.message.chat.id,
+                                    narx=data['price'], menu_name=data['menu_name'])
+        new_miq = await get_user_miqdor(chat_id=call.message.chat.id, fast_food=data['food_name'],
+                                        menu_name=data['menu_name'])
         if lang[3] == "uz":
             await call.answer(text=f"{data['food_name']} Miqdori 1 taga oshirildi.")
             await call.message.edit_reply_markup(reply_markup=await plus_minus_def(now=new_miq[2], price=new_miq[3]))
@@ -218,14 +227,17 @@ async def plus_handler(call: types.CallbackQuery, state: FSMContext):
             await call.answer(text=f"Количество {data['food_name']} увеличено на 1.")
             await call.message.edit_reply_markup(reply_markup=await plus_minus_def_ru(now=new_miq[2], price=new_miq[3]))
     else:
-        await add_product_to_basket(food_name=data['food_name'], narx=data['price'], chat_id=call.message.chat.id, menu_name=data['menu_name'])
-        new_miq = await get_user_miqdor(chat_id=call.message.chat.id, fast_food=data['food_name'], menu_name=data['menu_name'])
+        await add_product_to_basket(food_name=data['food_name'], narx=data['price'], chat_id=call.message.chat.id,
+                                    menu_name=data['menu_name'])
+        new_miq = await get_user_miqdor(chat_id=call.message.chat.id, fast_food=data['food_name'],
+                                        menu_name=data['menu_name'])
         if lang[3] == "uz":
             await call.answer(text=f"{data['food_name']} Miqdori 1 taga oshirildi.")
             await call.message.edit_reply_markup(reply_markup=await plus_minus_def(now=new_miq[2], price=new_miq[3]))
         else:
             await call.answer(text=f"Количество {data['food_name']} увеличено на 1.")
             await call.message.edit_reply_markup(reply_markup=await plus_minus_def_ru(now=new_miq[2], price=new_miq[3]))
+
 
 @dp.callback_query_handler(state='got_food', text=f"minus")
 async def minus_handler(call: types.CallbackQuery, state: FSMContext):
@@ -237,9 +249,13 @@ async def minus_handler(call: types.CallbackQuery, state: FSMContext):
     })
     lang = await get_user(chat_id=call.message.chat.id)
     if await is_in_basket(food_name=data['food_name'], chat_id=call.message.chat.id, menu_name=data['menu_name']):
-        old_miqdor = await get_product_in_basket(food_name=data['food_name'], chat_id=call.message.chat.id, menu_name=data['menu_name'])
-        await update_product_miqdor_minus(miqdor=int(old_miqdor['miqdor']), product_name=data['food_name'], chat_id=call.message.chat.id, menu_name=data['menu_name'], now_price=int(old_miqdor['narx']))
-        new_miq = await get_user_miqdor(chat_id=call.message.chat.id, fast_food=data['food_name'], menu_name=data['menu_name'])
+        old_miqdor = await get_product_in_basket(food_name=data['food_name'], chat_id=call.message.chat.id,
+                                                 menu_name=data['menu_name'])
+        await update_product_miqdor_minus(miqdor=int(old_miqdor['miqdor']), product_name=data['food_name'],
+                                          chat_id=call.message.chat.id, menu_name=data['menu_name'],
+                                          now_price=int(old_miqdor['narx']))
+        new_miq = await get_user_miqdor(chat_id=call.message.chat.id, fast_food=data['food_name'],
+                                        menu_name=data['menu_name'])
         if lang[3] == "uz":
             await call.answer(text=f"✅ Mashulot 1 taga kamaydi")
         else:
@@ -248,9 +264,11 @@ async def minus_handler(call: types.CallbackQuery, state: FSMContext):
         menu_pic = await get_menu_pic(menu_name=data['menu_name'])
         try:
             if lang[3] == "uz":
-                await call.message.edit_reply_markup(reply_markup=await plus_minus_def(now=int(new_miq['miqdor']), price=int(new_miq['narx'])))
+                await call.message.edit_reply_markup(
+                    reply_markup=await plus_minus_def(now=int(new_miq['miqdor']), price=int(new_miq['narx'])))
             else:
-                await call.message.edit_reply_markup(reply_markup=await plus_minus_def_ru(now=int(new_miq['miqdor']), price=int(new_miq['narx'])))
+                await call.message.edit_reply_markup(
+                    reply_markup=await plus_minus_def_ru(now=int(new_miq['miqdor']), price=int(new_miq['narx'])))
         except Exception as e:
             await call.message.delete()
             menuu = await get_fast_foods_in_menu(menu_name=data['menu_name'])
@@ -262,7 +280,8 @@ async def minus_handler(call: types.CallbackQuery, state: FSMContext):
                     menu_name = f"😋 {product['menu']} Menyu"
                 else:
                     menu_name = f"😋 {product['menu']} Меню"
-                products.insert(InlineKeyboardButton(text=f"{product['food_name']}", callback_data=f"{product['food_name']}"))
+                products.insert(
+                    InlineKeyboardButton(text=f"{product['food_name']}", callback_data=f"{product['food_name']}"))
             if lang[3] == "uz":
                 products.insert(InlineKeyboardButton(text=f"⬅️ Ortga", callback_data='back_uz'))
                 products.insert(InlineKeyboardButton(text=f"🏘 Asosiy menyu", callback_data='main_menu'))
@@ -276,7 +295,6 @@ async def minus_handler(call: types.CallbackQuery, state: FSMContext):
             await call.answer(text=f"😕 Mahsulot kamida 1 dona bolishi kerak.")
         else:
             await call.answer(text=f"😕 Товара должно быть не менее 1 шт.")
-
 
 
 @dp.message_handler(state="*", text=f"📥 Savat")
@@ -300,6 +318,7 @@ async def get_user_basket_handler(message: types.Message, state: FSMContext):
         await message.answer(text=userga, reply_markup=main_menu_uzb)
         await state.finish()
 
+
 @dp.message_handler(state="*", text=f"📥 Корзина")
 async def get_user_basket_handler(message: types.Message, state: FSMContext):
     user_basket = await get_user_basket(chat_id=message.chat.id)
@@ -321,16 +340,19 @@ async def get_user_basket_handler(message: types.Message, state: FSMContext):
         await message.answer(text=userga, reply_markup=main_menu_rus)
         await state.finish()
 
+
 @dp.message_handler(text="⚙️ Sozlamalar")
 async def settings_handler(message: types.Message, state: FSMContext):
     await message.answer(text=message.text, reply_markup=settings_uz)
     await state.set_state(f"setting")
+
 
 @dp.message_handler(state="setting", text=f"👤 Ism Familyani O'zgartirish")
 async def enter_new_name_handler(message: types.Message, state: FSMContext):
     userga = f"Toliq Ismingizni Kiriting."
     await message.answer(text=userga, reply_markup=cancel_uz)
     await state.set_state("new_name_uz")
+
 
 @dp.message_handler(state="new_name_uz")
 async def update_user_name_handler(message: types.Message, state: FSMContext):
@@ -339,11 +361,13 @@ async def update_user_name_handler(message: types.Message, state: FSMContext):
     await message.answer(text=userga, reply_markup=main_menu_uzb)
     await state.finish()
 
+
 @dp.message_handler(state="setting", text=f"📞 Telefon Raqamni O'zgartirish")
 async def set_phone_number_handler(message: types.Message, state: FSMContext):
     userga = f"📞 Iltimos Yangi Telefon Raqamingizni Kiriting."
     await message.answer(text=userga, reply_markup=cancel_uz)
     await state.set_state("set_number_uz")
+
 
 @dp.message_handler(state="set_number_uz")
 async def update_user_name_handler(message: types.Message, state: FSMContext):
@@ -362,12 +386,14 @@ async def update_user_name_handler(message: types.Message, state: FSMContext):
     await message.answer(text=userga, reply_markup=main_menu_uzb)
     await state.finish()
 
+
 @dp.message_handler(state="setting", text=f"🇺🇿 🔁 🇷🇺 Tilni O'zgartirish")
 async def set_phone_number_handler(message: types.Message, state: FSMContext):
     userga = f"Til Tanlang."
     await message.answer(text=f"Mavjud tillar", reply_markup=cancel_uz)
     await message.answer(text=userga, reply_markup=lang_select)
     await state.set_state("set_lang_uz")
+
 
 @dp.callback_query_handler(state="set_lang_uz")
 async def update_user_name_handler(call: types.CallbackQuery, state: FSMContext):
@@ -382,16 +408,19 @@ async def update_user_name_handler(call: types.CallbackQuery, state: FSMContext)
         await call.message.answer(text=userga, reply_markup=main_menu_rus)
     await state.finish()
 
+
 @dp.message_handler(text="⚙️ Настройки")
 async def settings_handler(message: types.Message, state: FSMContext):
     await message.answer(text=message.text, reply_markup=settings_ru)
     await state.set_state(f"setting_ru")
+
 
 @dp.message_handler(state="setting_ru", text=f"👤 Изменить имя Фамилию")
 async def enter_new_name_handler(message: types.Message, state: FSMContext):
     userga = f"Введите свое полное имя."
     await message.answer(text=userga, reply_markup=cancel_rus)
     await state.set_state("new_name_ru")
+
 
 @dp.message_handler(state="new_name_ru")
 async def update_user_name_handler(message: types.Message, state: FSMContext):
@@ -400,11 +429,13 @@ async def update_user_name_handler(message: types.Message, state: FSMContext):
     await message.answer(text=userga, reply_markup=main_menu_rus)
     await state.finish()
 
+
 @dp.message_handler(state="setting_ru", text=f"📞 Изменить номер телефона")
 async def set_phone_number_handler(message: types.Message, state: FSMContext):
     userga = f"📞 Введите свой новый номер телефона."
     await message.answer(text=userga, reply_markup=cancel_rus)
     await state.set_state("set_number_ru")
+
 
 @dp.message_handler(state="set_number_ru")
 async def update_user_name_handler(message: types.Message, state: FSMContext):
@@ -424,12 +455,14 @@ async def update_user_name_handler(message: types.Message, state: FSMContext):
     await message.answer(text=userga, reply_markup=main_menu_rus)
     await state.finish()
 
+
 @dp.message_handler(state="setting_ru", text=f"🇺🇿 🔁 🇷🇺 Изменить язык")
 async def set_phone_number_handler(message: types.Message, state: FSMContext):
     await message.answer(text=f"Доступные языки", reply_markup=cancel_rus)
     userga = f"Выберите язык."
     await message.answer(text=userga, reply_markup=lang_select)
     await state.set_state("set_lang_ru")
+
 
 @dp.callback_query_handler(state="set_lang_ru")
 async def update_user_name_handler(call: types.CallbackQuery, state: FSMContext):
@@ -444,6 +477,7 @@ async def update_user_name_handler(call: types.CallbackQuery, state: FSMContext)
         await call.message.answer(text=userga, reply_markup=main_menu_rus)
     await state.finish()
 
+
 @dp.callback_query_handler(state='waiting_card', text='payed')
 async def i_payed_card_handler(call: types.CallbackQuery, state: FSMContext):
     lang = await get_user(chat_id=call.message.chat.id)
@@ -453,6 +487,7 @@ async def i_payed_card_handler(call: types.CallbackQuery, state: FSMContext):
         userga = f"⚠️ Отправьте фото чека"
     await call.message.answer(text=userga, reply_markup=ReplyKeyboardRemove())
     await state.set_state('send_screenshot')
+
 
 @dp.message_handler(state='send_screenshot', content_types=types.ContentType.PHOTO)
 async def sent_photo_to_curer_handler(message: types.Message, state: FSMContext):
@@ -495,11 +530,14 @@ async def sent_photo_to_curer_handler(message: types.Message, state: FSMContext)
     bttn.insert(InlineKeyboardButton(text=f"✅ Mahsulot yetkazildi", callback_data=f"{message.chat.id}a"))
     if ishsiz_curer:
         await dp.bot.send_photo(chat_id=ishsiz_curer['chat_id'], photo=data['screenshot'], caption=curerga)
-        await dp.bot.send_location(chat_id=ishsiz_curer['chat_id'], latitude=data['latitude'], longitude=data['longitude'])
+        await dp.bot.send_location(chat_id=ishsiz_curer['chat_id'], latitude=data['latitude'],
+                                   longitude=data['longitude'])
         if lang[3] == "uz":
-            await message.answer(text=f"✅ Buyurtmangiz qabul qilindi.\n\n🆔 Buyurtma raqamingiz: {random_number}", reply_markup=main_menu_uzb)
+            await message.answer(text=f"✅ Buyurtmangiz qabul qilindi.\n\n🆔 Buyurtma raqamingiz: {random_number}",
+                                 reply_markup=main_menu_uzb)
         else:
-            await message.answer(text=f"✅ Ваш заказ принят.\n\n🆔 Номер вашего заказа: {random_number}", reply_markup=main_menu_rus)
+            await message.answer(text=f"✅ Ваш заказ принят.\n\n🆔 Номер вашего заказа: {random_number}",
+                                 reply_markup=main_menu_rus)
     else:
         all_curers = await get_all_curers()
         curers = []
@@ -519,6 +557,7 @@ async def sent_photo_to_curer_handler(message: types.Message, state: FSMContext)
                 reply_markup=main_menu_uzb)
     await state.finish()
 
+
 # Admin Functions
 
 @dp.message_handler(text="⚙️🍴 Menyuni o'zgartirish")
@@ -530,6 +569,8 @@ async def set_menu_handler(message: types.Message, state: FSMContext):
     else:
         userga = f"😕 Kechirasiz: {message.from_user.full_name} siz adminlik huquqiga ega emassiz\n‼️ Bu funksiya faqat adminlar uchun!"
         await message.answer(text=userga, reply_markup=main_menu_uzb)
+
+
 # Settings
 @dp.message_handler(state="setting", text='➕🍴 Taom qoshish')
 async def add_meal_to_menu_handler(message: types.Message, state: FSMContext):
@@ -548,6 +589,7 @@ async def add_meal_to_menu_handler(message: types.Message, state: FSMContext):
         userga = f"😕 Kechirasiz: {message.from_user.full_name} siz adminlik huquqiga ega emassiz\n‼️ Bu funksiya faqat adminlar uchun!"
         await message.answer(text=userga, reply_markup=main_menu_uzb)
 
+
 @dp.callback_query_handler(state='select_menu')
 async def selecting_menu(call: types.CallbackQuery, state: FSMContext):
     await call.message.delete()
@@ -559,6 +601,7 @@ async def selecting_menu(call: types.CallbackQuery, state: FSMContext):
     await call.message.answer(text=adminga, reply_markup=cancel_uz)
     await state.set_state('new_meal_pic')
 
+
 @dp.message_handler(state='new_meal_pic', content_types=types.ContentType.PHOTO)
 async def new_meal_picture_handler(message: types.Message, state: FSMContext):
     await state.update_data({
@@ -567,6 +610,7 @@ async def new_meal_picture_handler(message: types.Message, state: FSMContext):
     adminga = f'✍️ Yangi taomni nomini yuboring.'
     await message.answer(text=adminga, reply_markup=cancel_uz)
     await state.set_state('enter_new_meal_name')
+
 
 @dp.message_handler(state='enter_new_meal_name', content_types=types.ContentType.TEXT)
 async def new_meal_name_handler(message: types.Message, state: FSMContext):
@@ -577,6 +621,7 @@ async def new_meal_name_handler(message: types.Message, state: FSMContext):
     adminga = f'💰 Yangi taomni narxini kiriting.\n‼️ Faqat Sonlarda'
     await message.answer(text=adminga, reply_markup=cancel_uz)
     await state.set_state('new_meal_price')
+
 
 @dp.message_handler(state='new_meal_price')
 async def new_meal_price_handler(message: types.Message, state: FSMContext):
@@ -598,6 +643,7 @@ async def new_meal_price_handler(message: types.Message, state: FSMContext):
         await message.answer(text=adminga, reply_markup=main_menu_uzb)
         await state.finish()
 
+
 @dp.message_handler(state='description_new_meal')
 async def get_new_meal_desc(message: types.Message, state: FSMContext):
     adminga = f''
@@ -616,6 +662,7 @@ async def get_new_meal_desc(message: types.Message, state: FSMContext):
     await message.answer(text=adminga, reply_markup=admins_panel)
     await state.finish()
 
+
 @dp.message_handler(state='setting', text='🚫🍴 Taom olib tashlash')
 async def delete_meal_in_menu_handler(message: types.Message, state: FSMContext):
     if await is_admin(chat_id=message.chat.id):
@@ -633,6 +680,7 @@ async def delete_meal_in_menu_handler(message: types.Message, state: FSMContext)
         userga = f"😕 Kechirasiz: {message.from_user.full_name} siz adminlik huquqiga ega emassiz\n‼️ Bu funksiya faqat adminlar uchun!"
         await message.answer(text=userga, reply_markup=main_menu_uzb)
 
+
 @dp.callback_query_handler(state='selecting_menu_dl_ml')
 async def select_menu_dl_handler(call: types.CallbackQuery, state: FSMContext):
     await call.message.delete()
@@ -642,9 +690,11 @@ async def select_menu_dl_handler(call: types.CallbackQuery, state: FSMContext):
     foods_menu = InlineKeyboardMarkup(row_width=2)
     menu_foods = await get_fast_foods_in_menu(menu_name=call.data)
     for meal in menu_foods:
-        foods_menu.insert(InlineKeyboardButton(text=f"{meal['fast_food_name']}", callback_data=f"{meal['fast_food_name']}"))
+        foods_menu.insert(
+            InlineKeyboardButton(text=f"{meal['fast_food_name']}", callback_data=f"{meal['fast_food_name']}"))
     foods_menu.insert(InlineKeyboardButton(text=f"🏘 Asosiy menyu", callback_data='main_menu'))
     await state.set_state('deleting')
+
 
 @dp.callback_query_handler(state='deleting')
 async def deleting_meal_handler(call: types.CallbackQuery, state: FSMContext):
@@ -654,6 +704,7 @@ async def deleting_meal_handler(call: types.CallbackQuery, state: FSMContext):
         "meal": await call.data
     })
     await state.set_state('sure')
+
 
 @dp.callback_query_handler(state='sure')
 async def are_you_sure_handler(call: types.CallbackQuery, state: FSMContext):
@@ -667,11 +718,13 @@ async def are_you_sure_handler(call: types.CallbackQuery, state: FSMContext):
     await call.message.answer(text=adminga, reply_markup=admins_panel)
     await state.finish()
 
+
 @dp.message_handler(state='setting', text="🍴➕ Yangi menyu qoshish")
 async def add_new_menu_handler(message: types.Message, state: FSMContext):
     adminga = f"✍️ Yangi menyu nomini kiriting."
     await message.answer(text=adminga, reply_markup=cancel_uz)
     await state.set_state('enter_new_menu_name')
+
 
 @dp.message_handler(state='enter_new_menu_name')
 async def entering_new_menu_name_handler(message: types.Message, state: FSMContext):
@@ -682,6 +735,7 @@ async def entering_new_menu_name_handler(message: types.Message, state: FSMConte
     adminga = f'🖼 Yangi menyuni rasmini yuboring.'
     await message.answer(text=adminga, reply_markup=cancel_uz)
     await state.set_state('send_menu_pic')
+
 
 @dp.message_handler(state='send_menu_pic', content_types=types.ContentType.PHOTO)
 async def new_menu_pic_handler(message: types.Message, state: FSMContext):
@@ -694,6 +748,7 @@ async def new_menu_pic_handler(message: types.Message, state: FSMContext):
     adminga = f"✅ Yangi menyu qoshildi"
     await message.answer(text=adminga, reply_markup=admins_panel)
     await state.finish()
+
 
 @dp.message_handler(state='setting', text="⚙️🍴 Menyu nomini o'zgartirish")
 async def edit_menu_name_handler(message: types.Message, state: FSMContext):
@@ -708,6 +763,7 @@ async def edit_menu_name_handler(message: types.Message, state: FSMContext):
     await message.answer_photo(photo=pic['photo'], reply_markup=menu_bttn)
     await state.set_state('set_name')
 
+
 @dp.callback_query_handler(state='set_name')
 async def setting_name_handler(call: types.CallbackQuery, state: FSMContext):
     await state.update_data({
@@ -718,6 +774,7 @@ async def setting_name_handler(call: types.CallbackQuery, state: FSMContext):
     adminga = f"✍️ {await call.data} menuning yangi nomini kiriting"
     await call.message.answer(text=adminga, reply_markup=cancel_uz)
     await state.set_state('new_name')
+
 
 @dp.message_handler(state='new_name')
 async def setting_name_handler(message: types.Message, state: FSMContext):
@@ -735,6 +792,7 @@ async def setting_name_handler(message: types.Message, state: FSMContext):
     await message.answer(text=adminga, reply_markup=cancel_uz)
     await state.finish()
 
+
 @dp.message_handler(state='setting', text='🚫🍴 Menyu ochirish')
 async def delete_menu_handler(message: types.Message, state: FSMContext):
     adminga = f"Qaysi menyuni ochirib yubormoqchisiz?"
@@ -746,6 +804,7 @@ async def delete_menu_handler(message: types.Message, state: FSMContext):
     await message.answer(text=adminga, reply_markup=menu_bttn)
     await state.set_state('selecting_menu_to_delete')
 
+
 @dp.callback_query_handler(state='selecting_menu_to_delete')
 async def delete_menu_handler(call: types.CallbackQuery, state: FSMContext):
     await state.update_data({
@@ -755,6 +814,7 @@ async def delete_menu_handler(call: types.CallbackQuery, state: FSMContext):
     adminga = f"{call.data} menyuni va menyudagi taomlarni haqiqatdan ochirib yubormoqchimisiz?"
     await call.message.answer(text=adminga, reply_markup=yes_no)
     await state.set_state('sure_to_del_menu')
+
 
 @dp.callback_query_handler(state='sure_to_del_menu')
 async def really_del_menu_handler(call: types.CallbackQuery, state: FSMContext):
@@ -768,6 +828,7 @@ async def really_del_menu_handler(call: types.CallbackQuery, state: FSMContext):
         adminga = f"✅ Bekor qilindi."
     await call.message.answer(text=adminga, reply_markup=admins_panel)
     await state.finish()
+
 
 @dp.message_handler(state='setting', text=f"🔧💰 Taom narxini o'zgartirish")
 async def edit_meal_price_handler(message: types.Message, state: FSMContext):
@@ -786,6 +847,7 @@ async def edit_meal_price_handler(message: types.Message, state: FSMContext):
         await message.answer(text=userga, reply_markup=main_menu_uzb)
         await state.finish()
 
+
 @dp.callback_query_handler(state="select_menu_price")
 async def select_menu_handler(call: types.CallbackQuery, state: FSMContext):
     await call.message.delete()
@@ -801,6 +863,7 @@ async def select_menu_handler(call: types.CallbackQuery, state: FSMContext):
     await call.message.answer(text=adminga, reply_markup=meals)
     await state.set_state('select_meal')
 
+
 @dp.callback_query_handler(state='select_meal')
 async def selecting_meal_handler(call: types.CallbackQuery, state: FSMContext):
     await call.message.delete()
@@ -811,16 +874,19 @@ async def selecting_meal_handler(call: types.CallbackQuery, state: FSMContext):
         'food_name': call.data
     })
     food = await get_fast_food_in_menu(fast_food_name=call.data, menu_name=data['menu'])
-    await call.message.answer_photo(photo=food['photo'], caption=f"Mahsulot: {food['food_name']}\nNarxi: {food['price']}")
+    await call.message.answer_photo(photo=food['photo'],
+                                    caption=f"Mahsulot: {food['food_name']}\nNarxi: {food['price']}")
     adminga = f"💸 {food['food_name']} uchun yangi narx kiriting.\n‼️ Faqat sonlarda masalan: <b>23000</b>"
     await call.message.answer(text=adminga, reply_markup=cancel_uz)
     await state.set_state('new_price_meal')
+
 
 @dp.message_handler(state='new_price_meal')
 async def updating_meal_price_handler(message: types.Message, state: FSMContext):
     try:
         data = await state.get_data()
-        await update_meal_price(new_price=int(message.text), menu_name=data['menu'], rus_menu_name=data['menu_ru'], food_name=data['food_name'])
+        await update_meal_price(new_price=int(message.text), menu_name=data['menu'], rus_menu_name=data['menu_ru'],
+                                food_name=data['food_name'])
         adminga = f"<b>{data['food_name']}</b> mahsulotining narxi {message.text} ga o'zgartirildi."
         await message.answer(text=adminga, reply_markup=admins_panel)
         await state.finish()
@@ -829,11 +895,12 @@ async def updating_meal_price_handler(message: types.Message, state: FSMContext)
         await message.answer(text=adminga, reply_markup=cancel_uz)
         await state.set_state('new_price_meal')
     except Exception as e:
-        
+
         await dp.bot.send_message(chat_id=-1002075245072, text=f"Error: <b>{e}</b> Bot: <b>Sobranie</b>")
         adminga = f"😕 Kechirasiz botda xatolik mavjud iltimos qayta urinib koring."
         await message.answer(text=adminga, reply_markup=admins_panel)
         await state.finish()
+
 
 @dp.message_handler(state='setting', text=f"🔧🖼 Taom rasmini o'zgartirish")
 async def edit_meal_price_handler(message: types.Message, state: FSMContext):
@@ -852,6 +919,7 @@ async def edit_meal_price_handler(message: types.Message, state: FSMContext):
         await message.answer(text=userga, reply_markup=main_menu_uzb)
         await state.finish()
 
+
 @dp.callback_query_handler(state="select_menu_photo")
 async def select_menu_handler(call: types.CallbackQuery, state: FSMContext):
     await call.message.delete()
@@ -867,6 +935,7 @@ async def select_menu_handler(call: types.CallbackQuery, state: FSMContext):
     await call.message.answer(text=adminga, reply_markup=meals)
     await state.set_state('select_meal_to_photo')
 
+
 @dp.callback_query_handler(state='select_meal_to_photo')
 async def selecting_meal_handler(call: types.CallbackQuery, state: FSMContext):
     await call.message.delete()
@@ -880,11 +949,13 @@ async def selecting_meal_handler(call: types.CallbackQuery, state: FSMContext):
     await call.message.answer(text=adminga, reply_markup=cancel_uz)
     await state.set_state('new_photo_meal')
 
+
 @dp.message_handler(state='new_photo_meal', content_types=types.ContentType.PHOTO)
 async def updating_meal_price_handler(message: types.Message, state: FSMContext):
     try:
         data = await state.get_data()
-        await update_meal_photo(new_photo=message.photo[-1].file_id, menu_name=data['menu'], rus_menu_name=data['menu_ru'], food_name=data['food_name'])
+        await update_meal_photo(new_photo=message.photo[-1].file_id, menu_name=data['menu'],
+                                rus_menu_name=data['menu_ru'], food_name=data['food_name'])
         adminga = f"✅ <b>{data['food_name']}</b> mahsulotining rasmi o'zgartirildi."
         await message.answer(text=adminga, reply_markup=admins_panel)
         await state.finish()
@@ -894,6 +965,7 @@ async def updating_meal_price_handler(message: types.Message, state: FSMContext)
         adminga = f"😕 Kechirasiz botda xatolik mavjud iltimos qayta urinib koring."
         await message.answer(text=adminga, reply_markup=admins_panel)
         await state.finish()
+
 
 @dp.message_handler(state='setting', text=f"🔧✍️ Taom nomini o'zgartirish")
 async def edit_meal_price_handler(message: types.Message, state: FSMContext):
@@ -912,6 +984,7 @@ async def edit_meal_price_handler(message: types.Message, state: FSMContext):
         await message.answer(text=userga, reply_markup=main_menu_uzb)
         await state.finish()
 
+
 @dp.callback_query_handler(state="select_menu_name")
 async def select_menu_handler(call: types.CallbackQuery, state: FSMContext):
     await call.message.delete()
@@ -927,6 +1000,7 @@ async def select_menu_handler(call: types.CallbackQuery, state: FSMContext):
     await call.message.answer(text=adminga, reply_markup=meals)
     await state.set_state('select_meal_to_name')
 
+
 @dp.callback_query_handler(state='select_meal_to_name')
 async def selecting_meal_handler(call: types.CallbackQuery, state: FSMContext):
     await call.message.delete()
@@ -940,11 +1014,38 @@ async def selecting_meal_handler(call: types.CallbackQuery, state: FSMContext):
     await call.message.answer(text=adminga, reply_markup=cancel_uz)
     await state.set_state('new_name_meal')
 
+@dp.message_handler(text="🌐 Ijtimoiy tarmoq qo'shish")
+async def add_social_handler(message: types.Message, state: FSMContext):
+    if await is_admin(chat_id=message.chat.id):
+        await message.answer(text=f"😊 Yangi ijtimoy tarmoq qaysi dasturda?", reply_markup=cancel_uz)
+        await state.set_state('get_new_social_name')
+    else:
+        await message.answer(text=f"😕 Kechirasiz bu funksiya faqat adminlar uchun!", reply_markup=main_menu_uzb)
+        await state.finish()
+
+@dp.message_handler(state='get_new_social_name')
+async def get_new_social_name_handler(message: types.Message, state: FSMContext):
+    await state.update_data({
+        'social_name': message.text
+    })
+    await message.answer(text=f"🔗 {message.text}dagi sahifaning linkini yuboring.")
+    await state.set_state('new_social_link')
+
+@dp.message_handler(state='new_social_link')
+async def new_social_link_handler(message: types.Message, state: FSMContext):
+    await state.update_data({
+        'link': message.text
+    })
+    data = await state.get_data()
+    await add_social(data=data)
+    await message.answer(text=f"✅ Sahifa qo'shildi")
+
 @dp.message_handler(state='new_name_meal', content_types=types.ContentType.TEXT)
 async def updating_meal_price_handler(message: types.Message, state: FSMContext):
     try:
         data = await state.get_data()
-        await update_meal_name(new_name=message.text, menu_name=data['menu'], rus_menu_name=data['menu_ru'], food_name=data['food_name'])
+        await update_meal_name(new_name=message.text, menu_name=data['menu'], rus_menu_name=data['menu_ru'],
+                               food_name=data['food_name'])
         adminga = f"✅ <b>{data['food_name']}</b> mahsulotining nomi o'zgartirildi."
         await message.answer(text=adminga, reply_markup=admins_panel)
         await state.finish()
@@ -954,6 +1055,23 @@ async def updating_meal_price_handler(message: types.Message, state: FSMContext)
         adminga = f"😕 Kechirasiz botda xatolik mavjud iltimos qayta urinib koring."
         await message.answer(text=adminga, reply_markup=admins_panel)
         await state.finish()
+
+@dp.message_handler(text=f"ℹ️ Ma'lumot o'zgartirish ")
+async def change_about_handler(message: types.Message, state: FSMContext):
+    if await is_admin(chat_id=message.chat.id):
+        await message.answer(text=f"😊 Yangi ma'lumotni kiriting.", reply_markup=cancel_uz)
+        await state.set_state('admin_change_about')
+    else:
+        await message.answer(text=f"😕 Kechirasiz bu funksiya faqat adminlar uchun!", reply_markup=main_menu_uzb)
+        await state.finish()
+
+@dp.message_handler(state='admin_change_about')
+async def change_about_handler(message: types.Message, state: FSMContext):
+    await change_about(new_about=message.text)
+    await message.answer(text="✅ Ma'lumot o'zgartirildi", reply_markup=admins_panel)
+    await state.finish()
+
+
 
 @dp.message_handler(text="👤 Adminlar")
 async def admin_handler(message: types.Message, state: FSMContext):
@@ -965,9 +1083,152 @@ async def admin_handler(message: types.Message, state: FSMContext):
         userga = f"😕 Kechirasiz siz adminlik xuquqiga ega emassiz!\nBu funksiya faqat adminlar uchun!"
         await message.answer(text=userga, reply_markup=main_menu_uzb)
 
+@dp.message_handler(text=f"✍️ Izoh Qoldirish")
+async def comment_handler(message: types.Message, state: FSMContext):
+    await message.answer(text="😊 Izohingizni yozing", reply_markup=cancel_uz)
+    await state.set_state('send_comment')
+
+@dp.message_handler(state='send_comment')
+async def send_comment_handler(message: types.Message, state: FSMContext):
+    user = await get_user(chat_id=message.chat.id)
+    for admin in await get_all_admins():
+        await dp.bot.send_message(chat_id=admin['chat_id'], text=f"Foydalanuvchidan izoh\n👤 To'liq ism: {user['full_name']}\n👤 Username: @{user['username']}\n💬 Izoh: {message.text}")
+    await message.answer(text=f"✅ Izhongiz adminlarga yuborildi", reply_markup=main_menu_uzb)
+    await state.finish()
+
+@dp.message_handler(text=f"✍️ Оставить отзыв")
+async def comment_handler(message: types.Message, state: FSMContext):
+    await message.answer(text="😊 Напишите свой комментарий", reply_markup=cancel_rus)
+    await state.set_state('send_comment_ru')
+
+@dp.message_handler(state='send_comment_ru')
+async def send_comment_handler(message: types.Message, state: FSMContext):
+    user = await get_user(chat_id=message.chat.id)
+    for admin in await get_all_admins():
+        await dp.bot.send_message(chat_id=admin['chat_id'], text=f"Foydalanuvchidan izoh\n👤 To'liq ism: {user['full_name']}\n👤 Username: @{user['username']}\n💬 Izoh: {message.text}")
+    await message.answer(text=f"✅ Ваш комментарий отправлен администраторам", reply_markup=main_menu_rus)
+    await state.finish()
+
+@dp.message_handler(text=f"ℹ️ О нас")
+async def about_we_handler(message: types.Message, state: FSMContext):
+    about = await get_about_we()
+    await message.answer(text=f"{message.text[2:]}:\n<b>{about['about_we']}</b>")
+    await state.finish()
+
+@dp.message_handler(text=f"ℹ️ Biz haqimizda")
+async def about_we_handler(message: types.Message, state: FSMContext):
+    about = await get_about_we()
+    await message.answer(text=f"{message.text[2:]}:\n<b>{about['about_we']}</b>")
+    await state.finish()
+
+@dp.message_handler(text=f"🏘 🌐 Filiallar va Ijtimoy Tarmoqlar")
+async def filials_and_socials_handler(message: types.Message, state: FSMContext):
+    await message.answer(text=f"😊 Quyidagilardan birini tanlang.", reply_markup=filials_and_socials_bttn)
+    await state.set_state('filials_or_socials')
+
+@dp.message_handler(state=f"filials_or_socials")
+async def socials_or_filials_handler1(message: types.Message, state: FSMContext):
+    if message.text[0] == "📍":
+        await message.answer(text=f"😊 Bizning barcha filiallar")
+        for filial in await get_all_filials(lang="uz"):
+            await message.answer_location(latitude=filial['latitude'], longitude=filial['longitude'])
+            await message.answer(text=f"📍 {filial['filial_name']}")
+    else:
+        userga = f"😊 Bizning ijtimoy tarmqodagi sahifalarimiz"
+        for social in await get_all_socials():
+            userga += f"<a href={social['link']}>{social['social_name']}</a>"
+        photo = await get_main_menu_logo()
+        await message.answer_photo(photo=photo, caption=userga, reply_markup=main_menu_uzb, parse_mode='HTML')
+    await state.finish()
+
+@dp.message_handler(text=f"🏘 🌐 Филиалы и социальные сети")
+async def filials_and_socials_handler(message: types.Message, state: FSMContext):
+    await message.answer(text=f"😊 Выберите один из следующих вариантов.", reply_markup=filials_and_socials_bttn)
+    await state.set_state('filials_or_socials_ru')
+
+@dp.message_handler(state=f"filials_or_socials_ru")
+async def socials_or_filials_handler1(message: types.Message, state: FSMContext):
+    if message.text[0] == "📍":
+        await message.answer(text=f"😊 Все наши филиалы")
+        for filial in await get_all_filials(lang="ru"):
+            await message.answer_location(latitude=filial['latitude'], longitude=filial['longitude'])
+            await message.answer(text=f"📍 {filial['filial_name']}")
+    else:
+        userga = f"😊 Наши страницы в социальных сетях"
+        for social in await get_all_socials():
+            userga += f"<a href={social['link']}>{social['social_name']}</a>\n\n"
+        photo = await get_main_menu_logo()
+        await message.answer_photo(photo=photo, caption=userga, reply_markup=main_menu_uzb, parse_mode='HTML')
+    await state.finish()
+
+@dp.message_handler(text=f"📋 Мои заказы")
+async def my_orders_handler(message: types.Message, state: FSMContext):
+    orders = await get_all_orders(chat_id=message.chat.id)
+    if orders:
+        for order in orders:
+            userga = f""
+            abouts = []
+            total = 0
+            for i in await get_order_with_id(order_number=order['number']):
+                abouts.append(i['bought_at'])
+                abouts.append(i['status'])
+                abouts.append(i['go_or_order'])
+                abouts.append(i['which_filial'])
+                abouts.append(i['payment_status'])
+                abouts.append(i['payment_method'])
+                total += int(i['price']) * int(i['miqdor'])
+                userga += f"""
+<b>{i['product']}</b> <b>{i['price']}</b> * <b>{i['miqdor']}</b> = <b>{int(i['price']) * int(i['miqdor'])}</b>
+"""
+            userga += f"""
+💰 Общий: <b>{total}</b>
+📅 Дата покупки: <b>{abouts[0]}</b>
+‼️ Положение дел: <b>{translate_uz_to_ru(text=abouts[1])}</b>
+🚚 Тип заказа: <b>{translate_uz_to_ru(text=abouts[2])}</b>
+💸 Способ оплаты: <b>{translate_uz_to_ru(text=abouts[4])}</b>
+💲 Статус платежа: <b>{abouts[5]}</b>
+"""
+            if abouts[3] != "null":
+                userga += f"📍 Ветвь: {abouts[3]}"
+            await message.answer(text=userga)
+
+    else:
+        await message.answer(text=f"😕 К сожалению, вы ничего не заказали в нашем ресторане.")
+
 @dp.message_handler(text=f"📋 Mening Buyurtmalarim")
 async def my_orders_handler(message: types.Message, state: FSMContext):
-    pass
+    orders = await get_all_orders(chat_id=message.chat.id)
+    if orders:
+        for order in orders:
+            userga = f""
+            abouts = []
+            total = 0
+            for i in await get_order_with_id(order_number=order['number']):
+                abouts.append(i['bought_at'])
+                abouts.append(i['status'])
+                abouts.append(i['go_or_order'])
+                abouts.append(i['which_filial'])
+                abouts.append(i['payment_status'])
+                abouts.append(i['payment_method'])
+                total += int(i['price']) * int(i['miqdor'])
+                userga += f"""
+<b>{i['product']}</b> <b>{i['price']}</b> * <b>{i['miqdor']}</b> = <b>{int(i['price']) * int(i['miqdor'])}</b>
+"""
+            userga += f"""
+💰 Ja'mi: <b>{total}</b>
+📅 Sotib olingan sana: <b>{abouts[0]}</b>
+‼️ Status: <b>{abouts[1]}</b>
+🚚 Buyurtma turi: <b>{abouts[2]}</b>
+💸 To'lov turi: <b>{abouts[4]}</b>
+💲 To'lov holati: <b>{abouts[5]}</b>
+"""
+            if abouts[3] != "null":
+                userga += f"📍 Filial: {abouts[3]}"
+            await message.answer(text=userga)
+
+    else:
+        await message.answer(text=f"😕 Kechirasiz siz bizning restarantdan hech narsa buyurtma bermagansiz.")
+
 
 @dp.message_handler(state="setting_admin", text="➕👤 Yangi admin qoshish")
 async def admin_handler(message: types.Message, state: FSMContext):
@@ -978,6 +1239,7 @@ async def admin_handler(message: types.Message, state: FSMContext):
     else:
         userga = f"😕 Kechirasiz siz adminlik xuquqiga ega emassiz!\nBu funksiya faqat adminlar uchun!"
         await message.answer(text=userga, reply_markup=main_menu_uzb)
+
 
 @dp.message_handler(state="sending_admin_chat_id")
 async def admin_handler(message: types.Message, state: FSMContext):
@@ -993,6 +1255,7 @@ async def admin_handler(message: types.Message, state: FSMContext):
         await message.answer(text=adminga, reply_markup=cancel_uz)
         await state.set_state('sending_admin_chat_id')
 
+
 @dp.message_handler(state='get_admin_name')
 async def got_admin_name_handler(message: types.Message, state: FSMContext):
     try:
@@ -1001,7 +1264,9 @@ async def got_admin_name_handler(message: types.Message, state: FSMContext):
         })
         data = await state.get_data()
         await add_admin_to_db(data=data)
-        await dp.bot.send_message(chat_id=data['chat_id'], text=f"🥳 Tabriklaymiz: {message.text} siz ushbu botda adminlik huquqiga ega boldingiz!", reply_markup=admins_panel)
+        await dp.bot.send_message(chat_id=data['chat_id'],
+                                  text=f"🥳 Tabriklaymiz: {message.text} siz ushbu botda adminlik huquqiga ega boldingiz!",
+                                  reply_markup=admins_panel)
         await message.answer(text=f"🥳 Tabriklaymiz yangi admin adminlar bolimiga qoshildi!", reply_markup=admins_panel)
         await state.finish()
     except Exception as e:
@@ -1009,6 +1274,7 @@ async def got_admin_name_handler(message: types.Message, state: FSMContext):
         await dp.bot.send_message(chat_id=-1002075245072, text=f"Error: <b>{e}</b> Line 649")
         await message.answer(text=adminga, reply_markup=admins_panel)
         await state.finish()
+
 
 @dp.message_handler(state='setting_admin', text=f"🚫👤 Admin olib tashlash")
 async def remove_admin_handler(message: types.Message, state: FSMContext):
@@ -1025,11 +1291,14 @@ async def remove_admin_handler(message: types.Message, state: FSMContext):
         await message.answer(text=userga, reply_markup=main_menu_uzb)
         await state.finish()
 
+
 @dp.message_handler(state='getting_chatid_dl')
 async def got_admin_chat_id_handler(message: types.Message, state: FSMContext):
     try:
         adminga = f"👍 Ushbu admin adminlar orasidan olib tashlandi."
-        await dp.bot.send_message(chat_id=int(message.text), text=f'😕 Kechirasiz siz adminlar orasidan olib tashlandingiz.', reply_markup=main_menu_uzb)
+        await dp.bot.send_message(chat_id=int(message.text),
+                                  text=f'😕 Kechirasiz siz adminlar orasidan olib tashlandingiz.',
+                                  reply_markup=main_menu_uzb)
         await dl_admin(chat_id=int(message.chat.id))
         await message.answer(text=adminga, reply_markup=admins_panel)
         await state.finish()
@@ -1042,6 +1311,7 @@ async def got_admin_chat_id_handler(message: types.Message, state: FSMContext):
         adminga = f"😕 Kechirasiz botda xatolik yuz berdi iltimos qayta urinib koring!"
         await message.answer(text=adminga, reply_markup=admins_panel)
         await state.finish()
+
 
 @dp.message_handler(state='setting_admin', text=f"📄👤 Adminlar")
 async def get_all_admins_handler(message: types.Message, state: FSMContext):
@@ -1056,6 +1326,7 @@ async def get_all_admins_handler(message: types.Message, state: FSMContext):
         await message.answer(text=userga, reply_markup=main_menu_uzb)
     await state.finish()
 
+
 @dp.message_handler(text="🚚 Kuryerlar")
 async def curers_handler(message: types.Message, state: FSMContext):
     if await is_admin(chat_id=message.chat.id):
@@ -1067,13 +1338,16 @@ async def curers_handler(message: types.Message, state: FSMContext):
         await message.answer(text=userga, reply_markup=main_menu_uzb)
         await state.finish()
 
+
 @dp.message_handler(state='setting_curer')
 async def setting_curer_handler(message: types.Message, state: FSMContext):
     if message.text[0] == "➕":
         await message.answer(text=f"✍️ Yangi kuryer ismini kiriting.", reply_markup=cancel_uz)
         await state.set_state('get_new_curer_name')
     elif message.text[0] == "🚫":
-        await message.answer(text=f"✍️ Ochirib yubormoqchi bolgan kuryer chat_id raqamini kiriting yoki ismini kiriting.", reply_markup=cancel_uz)
+        await message.answer(
+            text=f"✍️ Ochirib yubormoqchi bolgan kuryer chat_id raqamini kiriting yoki ismini kiriting.",
+            reply_markup=cancel_uz)
         await state.set_state('get_delete_curer_name')
     elif message.text[0] == "📄":
         adminga = f"Kuryerlar ro'yxati.\n"
@@ -1081,6 +1355,7 @@ async def setting_curer_handler(message: types.Message, state: FSMContext):
         for curer in all_curers:
             adminga += f"👤 Ism: {curer['name']} \t Chat_id: {curer['chat_id']}"
         await message.answer(text=adminga)
+
 
 @dp.message_handler(state="get_new_curer_name")
 async def get_new_curer_name_handler(message: types.Message, state: FSMContext):
@@ -1090,6 +1365,7 @@ async def get_new_curer_name_handler(message: types.Message, state: FSMContext):
         "name": message.text.capitalize()
     })
     await state.set_state('get_new_curer_id')
+
 
 @dp.message_handler(state="get_new_curer_id")
 async def get_new_curer_name_handler(message: types.Message, state: FSMContext):
@@ -1111,6 +1387,7 @@ async def get_new_curer_name_handler(message: types.Message, state: FSMContext):
         await message.answer(text=f"😕 Kechirasiz bu chat_id raqamdagi foydalnuvchi botdan topilmadi!")
         await state.finish()
 
+
 @dp.message_handler(state='get_delete_curer_name')
 async def get_delete_curer_name_handler(message: types.Message, state: FSMContext):
     adminga = f""
@@ -1124,6 +1401,7 @@ async def get_delete_curer_name_handler(message: types.Message, state: FSMContex
     await message.answer(text=adminga, reply_markup=yes_no_def)
     await state.set_state('really_del')
 
+
 @dp.message_handler(text=f"💸 To'lov turlari")
 async def change_payment_methods_handler(message: types.Message, state: FSMContext):
     if await is_admin(chat_id=message.chat.id):
@@ -1134,6 +1412,7 @@ async def change_payment_methods_handler(message: types.Message, state: FSMConte
         userga = f"😕 Kechirasiz: {message.from_user.full_name} siz adminlik huquqiga ega emassiz bu funksiya faqat bot adminlari uchun"
         await message.answer(text=userga, reply_markup=main_menu_uzb)
         await state.finish()
+
 
 @dp.message_handler(state='setting_payment')
 async def payment_method_handler(message: types.Message, state: FSMContext):
@@ -1172,6 +1451,7 @@ async def payment_method_handler(message: types.Message, state: FSMContext):
         await message.answer(text=adminga, reply_markup=admins_panel)
         await state.finish()
 
+
 @dp.message_handler(state='turning_off_payment')
 async def turning_off_handler(message: types.Message, state: FSMContext):
     adminga = f""
@@ -1183,6 +1463,7 @@ async def turning_off_handler(message: types.Message, state: FSMContext):
         adminga = f"❌ Kechirasiz botda xatolik yuz berdi iltimos qayta urinib ko'ring."
     await state.finish()
     await message.answer(text=adminga, reply_markup=admins_panel)
+
 
 @dp.message_handler(state='new_payment_method_name')
 async def turning_off_handler(message: types.Message, state: FSMContext):
@@ -1196,6 +1477,7 @@ async def turning_off_handler(message: types.Message, state: FSMContext):
     await message.answer(text=adminga, reply_markup=admins_panel)
     await state.finish()
 
+
 @dp.message_handler(state='deleting_payment')
 async def turning_off_handler(message: types.Message, state: FSMContext):
     adminga = f""
@@ -1208,6 +1490,7 @@ async def turning_off_handler(message: types.Message, state: FSMContext):
     await message.answer(text=adminga, reply_markup=admins_panel)
     await state.finish()
 
+
 @dp.message_handler(state='change_payment_status')
 async def turning_off_handler(message: types.Message, state: FSMContext):
     adminga = f""
@@ -1219,6 +1502,7 @@ async def turning_off_handler(message: types.Message, state: FSMContext):
         adminga = f"😔 Kechirasiz botda xatolik yuz berdi iltimos qayta urinib ko'ring."
     await message.answer(text=adminga, reply_markup=admins_panel)
     await state.finish()
+
 
 @dp.message_handler(state='really_del')
 async def get_delete_curer_name_handler(message: types.Message, state: FSMContext):
@@ -1233,6 +1517,7 @@ async def get_delete_curer_name_handler(message: types.Message, state: FSMContex
         adminga = f"{message.text[0]} Bekor qilindi."
     await state.finish()
     await message.answer(text=adminga, reply_markup=admins_panel)
+
 
 @dp.message_handler(state='waiting_card')
 async def user_dont_want_wait_handler(message: types.Message, state: FSMContext):
@@ -1270,11 +1555,13 @@ async def user_dont_want_wait_handler(message: types.Message, state: FSMContext)
     curerga += f"<b>💳 Plastik karta kutyabdi</b>\n"
     curerga += f"➕ Ja'mi: {total}"
     bttn = InlineKeyboardMarkup(row_width=1)
-    bttn.insert(InlineKeyboardButton(text=f"✅ Mahsulot yetkazildi", callback_data=f"{message.chat.id}_{random_number}_curer"))
+    bttn.insert(
+        InlineKeyboardButton(text=f"✅ Mahsulot yetkazildi", callback_data=f"{message.chat.id}_{random_number}_curer"))
     if ishsiz_curer:
         await add_count_to_curer(chat_id=ishsiz_curer['chat_id'])
         await dp.bot.send_message(chat_id=ishsiz_curer['chat_id'], text=curerga, reply_markup=bttn)
-        await dp.bot.send_location(chat_id=ishsiz_curer['chat_id'], longitude=data['longitude'], latitude=data['latitude'])
+        await dp.bot.send_location(chat_id=ishsiz_curer['chat_id'], longitude=data['longitude'],
+                                   latitude=data['latitude'])
         if lang[3] == "uz":
             await message.answer(text=f"✅ Buyurtmangiz qabul qilindi.", reply_markup=main_menu_uzb)
         else:
@@ -1297,6 +1584,7 @@ async def user_dont_want_wait_handler(message: types.Message, state: FSMContext)
                 reply_markup=main_menu_uzb)
     await state.finish()
 
+
 @dp.message_handler(state='in_basket')
 async def dl_from_basket_handler(message: types.Message, state: FSMContext):
     if message.text[0] == "❌":
@@ -1317,11 +1605,14 @@ async def dl_from_basket_handler(message: types.Message, state: FSMContext):
         else:
             userga = "😊 Главное меню"
             await message.answer(text=userga, reply_markup=main_menu_rus)
+
+
 @dp.message_handler(state="setting", text="🖼 Asosiy menyu rasmini o'zgartirish")
 async def set_main_menu_pic(message: types.Message, state: FSMContext):
     adminga = f"😊 Asosiy menyuning yangi rasmini yuboring."
     await message.answer(text=adminga, reply_markup=cancel_uz)
     await state.set_state('update_photo_main_menu')
+
 
 @dp.message_handler(state='update_photo_main_menu', content_types=types.ContentType.PHOTO)
 async def update_main_photo_handler(message: types.Message, state: FSMContext):
@@ -1335,6 +1626,7 @@ async def update_main_photo_handler(message: types.Message, state: FSMContext):
     await message.answer(text=adminga, reply_markup=admins_panel)
     await state.finish()
 
+
 @dp.message_handler(text=f"📍 Filiallar")
 async def filials_handler(message: types.Message, state: FSMContext):
     if await is_admin(chat_id=message.chat.id):
@@ -1344,6 +1636,7 @@ async def filials_handler(message: types.Message, state: FSMContext):
     else:
         userga = f"😕 Kechirasiz siz adminlik huquqiga ega emassiz.\nBu funksiya faqat bot adminlar uchun!"
         await message.answer(text=userga, reply_markup=main_menu_uzb)
+
 
 @dp.message_handler(state='setting_filials')
 async def setting_filials_handler(message: types.Message, state: FSMContext):
@@ -1414,6 +1707,7 @@ async def setting_filials_handler(message: types.Message, state: FSMContext):
         await message.answer(text=adminga, reply_markup=admins_panel)
         await state.finish()
 
+
 @dp.message_handler(state='get_new_filial_name')
 async def get_new_filial_name_handler(message: types.Message, state: FSMContext):
     await state.update_data({
@@ -1423,6 +1717,7 @@ async def get_new_filial_name_handler(message: types.Message, state: FSMContext)
     adminga = f"📍 Yangi filial joylashuvini yuboring"
     await message.answer(text=adminga, reply_markup=send_location)
     await state.set_state('get_loc_new_filial')
+
 
 @dp.message_handler(state=f"get_loc_new_filial", content_types=types.ContentType.LOCATION)
 async def new_filial_loc(message: types.Message, state: FSMContext):
@@ -1436,14 +1731,17 @@ async def new_filial_loc(message: types.Message, state: FSMContext):
     await message.answer(text=adminga, reply_markup=admins_panel)
     await state.finish()
 
+
 @dp.message_handler(state=f'del_filial')
 async def delete_filial_handler(message: types.Message, state: FSMContext):
     await state.update_data({
         'filial_name_uz': message.text,
         'filial_name_ru': translate_uz_to_ru(text=message.text)
     })
-    await message.answer(text=f"🤔 Haqiqatdan ham: <b>{message.text}</b> filialini ochirmoqchimisiz?", reply_markup=yes_no_def)
+    await message.answer(text=f"🤔 Haqiqatdan ham: <b>{message.text}</b> filialini ochirmoqchimisiz?",
+                         reply_markup=yes_no_def)
     await state.set_state('really_del_filal')
+
 
 @dp.message_handler(state=f"really_del_filial")
 async def really_delete_filial(message: types.Message, state: FSMContext):
@@ -1458,17 +1756,20 @@ async def really_delete_filial(message: types.Message, state: FSMContext):
     await message.answer(text=adminga, reply_markup=admins_panel)
     await state.finish()
 
+
 @dp.message_handler(state=f'close_filial')
 async def close_filial_handler(message: types.Message, state: FSMContext):
     await close_filial(filial_name=message.text, filial_name_ru=translate_uz_to_ru(text=message.text))
     await message.answer(text=f"✅ {message.text} yopildi", reply_markup=admins_panel)
     await state.finish()
 
+
 @dp.message_handler(state='open_filial')
 async def open_filial_handler(message: types.Message, state: FSMContext):
     await open_filial(filial_name=message.text, filial_name_ru=translate_uz_to_ru(text=message.text))
     await message.answer(text=f"✅ {message.text} ochildi", reply_markup=admins_panel)
     await state.finish()
+
 
 @dp.message_handler(state='del_filial_admin')
 async def del_filial_admin_handler(message: types.Message, state: FSMContext):
@@ -1487,6 +1788,7 @@ async def del_filial_admin_handler(message: types.Message, state: FSMContext):
         await message.answer(text=f'‼️ {message.text}da adminlar mavjud emas!')
         await state.finish()
 
+
 @dp.message_handler(state=f"select_filial_admin")
 async def filial_admin_selected_handler(message: types.Message, state: FSMContext):
     await state.update_data({
@@ -1495,11 +1797,15 @@ async def filial_admin_selected_handler(message: types.Message, state: FSMContex
     data = await state.get_data()
     try:
         await delete_filial_admin(data=data)
-        await message.answer(text=f"✅ <b>{data['admin_name']}</b> <b>{data['filial_name']}</b> adminlar orasidan olib tashlandi.", reply_markup=admins_panel)
+        await message.answer(
+            text=f"✅ <b>{data['admin_name']}</b> <b>{data['filial_name']}</b> adminlar orasidan olib tashlandi.",
+            reply_markup=admins_panel)
     except Exception as e:
         await dp.bot.send_message(chat_id=-1002075245072, text=f"Error:\n<b>{e}</b>\nBot: SOBRANIE")
-        await message.answer(text=f"❌ Kechirasiz xatolik yuz berdi.Iltimos qayta urinib ko'ring.", reply_markup=admins_panel)
+        await message.answer(text=f"❌ Kechirasiz xatolik yuz berdi.Iltimos qayta urinib ko'ring.",
+                             reply_markup=admins_panel)
     await state.finish()
+
 
 @dp.message_handler(state='select_filial_add_admin')
 async def select_filial_add_admin_handler(message: types.Message, state: FSMContext):
@@ -1509,6 +1815,7 @@ async def select_filial_add_admin_handler(message: types.Message, state: FSMCont
     await message.answer(text=f"✍️ {message.text}ning yangi admining ismini kiriting.", reply_markup=cancel_uz)
     await state.set_state('enter_new_filial_admin_name')
 
+
 @dp.message_handler(state=f"enter_new_filial_admin_name")
 async def enter_new_filial_admin_name_handler(message: types.Message, state: FSMContext):
     await state.update_data({
@@ -1516,6 +1823,7 @@ async def enter_new_filial_admin_name_handler(message: types.Message, state: FSM
     })
     await message.answer(text=f"‼️ Yangi admin chat_id raqamini kiriting!", reply_markup=cancel_uz)
     await state.set_state('new_admin_chat_id_filial')
+
 
 @dp.message_handler(state='new_admin_chat_id_filial')
 async def new_admin_chat_id_filial_handler(message: types.Message, state: FSMContext):
@@ -1525,7 +1833,9 @@ async def new_admin_chat_id_filial_handler(message: types.Message, state: FSMCon
         })
         data = await state.get_data()
         await add_admin_filial(data=data)
-        await dp.bot.send_message(chat_id=int(message.text), text=f"🥳 Tabriklaymiz siz {data['filial_name']} filimizda adminlik huquqiga ega bo'ldingiz.", reply_markup=admins_panel)
+        await dp.bot.send_message(chat_id=int(message.text),
+                                  text=f"🥳 Tabriklaymiz siz {data['filial_name']} filimizda adminlik huquqiga ega bo'ldingiz.",
+                                  reply_markup=admins_panel)
         await message.answer(text=f"✅ {data['filial_name']}ga yangi admin qo'shildi", reply_markup=admins_panel)
         await state.finish()
     except Exception as e:
@@ -1534,14 +1844,17 @@ async def new_admin_chat_id_filial_handler(message: types.Message, state: FSMCon
                              reply_markup=admins_panel)
     await state.finish()
 
+
 @dp.message_handler(text="🆔 Buyurtmalar")
 async def orders_handler(message: types.Message, state: FSMContext):
     if await is_admin(chat_id=message.chat.id):
         await message.answer(text=f'🆔 Buyurtma raqamini kiriting.', reply_markup=cancel_uz)
         await state.set_state(f"get_order_with_id")
     else:
-        await message.answer(text=f"😕 Kechirasiz siz adminlik huquqiga ega emassiz.Bu funksiya faqat adminlar uchun.", reply_markup=main_menu_uzb)
+        await message.answer(text=f"😕 Kechirasiz siz adminlik huquqiga ega emassiz.Bu funksiya faqat adminlar uchun.",
+                             reply_markup=main_menu_uzb)
         await state.finish()
+
 
 @dp.message_handler(state="get_order_with_id")
 async def get_order_with_id_handler(message: types.Message, state: FSMContext):
@@ -1593,7 +1906,8 @@ async def get_order_with_id_handler(message: types.Message, state: FSMContext):
         adminga += f"‼️ Status: <b>{pay_status[1]}</b>"
         bttn = InlineKeyboardMarkup(row_width=1)
         if pay_status[1] == f"✅ Olib ketish mumkin":
-            bttn.insert(InlineKeyboardButton(text=f'✅ Xaridorga topshirildi', callback_data=f'{chat_id}_{message.text}_filial_gave'))
+            bttn.insert(InlineKeyboardButton(text=f'✅ Xaridorga topshirildi',
+                                             callback_data=f'{chat_id}_{message.text}_filial_gave'))
         elif pay_status[1] == '❌ Tayyorlanmoqda':
             bttn.insert(InlineKeyboardButton(text=f'✅ Tayyor', callback_data=f'{chat_id}_{message.text}_filial'))
 

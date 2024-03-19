@@ -120,6 +120,10 @@ admins_panel = ReplyKeyboardMarkup(
             KeyboardButton(text=f"🆔 Buyurtmalar")
         ],
         [
+            KeyboardButton(text=f"ℹ️ Ma'lumot o'zgartirish"),
+            KeyboardButton(text=f"🌐 Ijtimoiy tarmoq qo'shish")
+        ],
+        [
             KeyboardButton(text=f'🍴 Menyu')
         ]
     ], resize_keyboard=True
@@ -322,6 +326,18 @@ send_location = ReplyKeyboardMarkup(
     keyboard=[
         [
             KeyboardButton(text=f"📍 Joylashuv yuborish", request_location=True)
+        ],
+        [
+            KeyboardButton(text=f"❌ Bekor Qilish")
+        ]
+    ], resize_keyboard=True
+)
+
+filials_and_socials_bttn = ReplyKeyboardMarkup(
+    keyboard=[
+        [
+            KeyboardButton(text=f"📍 Filiallar"),
+            KeyboardButton(text=f"🌐 Ijtimoiy tarmoqlar")
         ],
         [
             KeyboardButton(text=f"❌ Bekor Qilish")

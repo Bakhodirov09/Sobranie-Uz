@@ -142,3 +142,17 @@ order_number = sqlalchemy.Table(
     sqlalchemy.Column('number', sqlalchemy.BigInteger),
     sqlalchemy.Column('chat_id', sqlalchemy.BigInteger),
 )
+
+about_we = sqlalchemy.Table(
+    'about_we',
+    metadata,
+    sqlalchemy.Column('about_we', sqlalchemy.String)
+)
+
+socials = sqlalchemy.Table(
+    'socials',
+    metadata,
+    sqlalchemy.Column('id', sqlalchemy.Integer, primary_key=True),
+    sqlalchemy.Column('social_name', sqlalchemy.String),
+    sqlalchemy.Column('link', sqlalchemy.String),
+)

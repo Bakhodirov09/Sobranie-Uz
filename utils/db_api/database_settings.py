@@ -305,15 +305,47 @@ async def update_user_status(chat_id):
     ).where(ordering.c.chat_id==chat_id))
 
 async def update_main_photo(new_photo):
-    return await database.execute(query=logo.update().values(
-        photo=new_photo
-    ))
+    if await database.fetch_one(query=logo.select()):
+        return await database.execute(query=logo.update().values(
+            photo=new_photo
+        ))
+    else:
+        return await database.execute(query=logo.insert().values(
+            photo=new_photo
+            ))
 
 async def add_number_buys(number, chat_id):
     return await database.execute(query=order_number.insert().values(
         number=number,
         chat_id=chat_id
     ))
+
+async def get_all_orders(chat_id):
+    return await database.fetch_all(query=order_number.select().where(
+        order_number.c.chat_id==chat_id
+    ))
+
+async def get_all_socials():
+    return await database.fetch_all(query=socials.select())
+
+async def add_social(data: dict):
+    return await database.execute(query=database.execute(query=socials.insert().values(
+        social_name=data['social_name'],
+        link=data['link']
+    )))
+
+async def change_about(new_about):
+    if await database.fetch_one(query=about_we.select()):
+        return await database.execute(query=about_we.update().values(
+            about_we=new_about
+        ))
+    else:
+        return await database.execute(query=about_we.insert().values(
+            about_we=new_about
+        ))
+
+async def get_about_we():
+    return await database.fetch_one(query=about_we.select())
 
 async def add_history_buys(chat_id, number, miqdor, product, price, bought_at, status, pay, payment_status,go_or_order, which_filial):
     return await database.execute(query=history_buys.insert().values(
