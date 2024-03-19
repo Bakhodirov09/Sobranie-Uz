@@ -16,7 +16,7 @@ send_phone_number_rus = ReplyKeyboardMarkup(
     ], resize_keyboard=True
 )
 
-main_menu_rus: ReplyKeyboardMarkup = ReplyKeyboardMarkup(
+main_menu_rus = ReplyKeyboardMarkup(
     keyboard=[
         [
             KeyboardButton(text="🍴 Меню")
