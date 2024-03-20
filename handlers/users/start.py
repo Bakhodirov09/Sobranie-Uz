@@ -1913,4 +1913,6 @@ async def get_order_with_id_handler(message: types.Message, state: FSMContext):
 
         await message.answer(text=f"Buyurtma", reply_markup=admins_panel)
         await message.answer(text=adminga, reply_markup=bttn)
-        await state.finish()
+    else:
+        await message.answer(text=f"😕 Bunday raqamli buyurtma topilmadi!", reply_markup=admins_panel)
+    await state.finish()
