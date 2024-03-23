@@ -329,10 +329,10 @@ async def get_all_socials():
     return await database.fetch_all(query=socials.select())
 
 async def add_social(data: dict):
-    return await database.execute(query=database.execute(query=socials.insert().values(
+    return await database.execute(socials.insert().values(
         social_name=data['social_name'],
         link=data['link']
-    )))
+    ))
 
 async def change_about(new_about):
     if await database.fetch_one(query=about_we.select()):
