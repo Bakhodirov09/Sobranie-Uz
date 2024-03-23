@@ -1038,7 +1038,8 @@ async def new_social_link_handler(message: types.Message, state: FSMContext):
     })
     data = await state.get_data()
     await add_social(data=data)
-    await message.answer(text=f"✅ Sahifa qo'shildi")
+    await message.answer(text=f"✅ Sahifa qo'shildi", reply_markup=admins_panel)
+    await state.finish()
 
 @dp.message_handler(state='new_name_meal', content_types=types.ContentType.TEXT)
 async def updating_meal_price_handler(message: types.Message, state: FSMContext):
