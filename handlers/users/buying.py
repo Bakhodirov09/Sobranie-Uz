@@ -136,10 +136,10 @@ async def get_location_handler(message: types.Message, state: FSMContext):
                 payments_bttn.insert(KeyboardButton(text=f"💴 {payment['payment_name']}"))
 
         if lang[3] == "uz":
-            payments_bttn.insert(KeyboardButton(text=f"⬅️ Ortga"))
+            payments_bttn.insert(KeyboardButton(text=f"❌ Bekor qilish"))
             userga = f"💸 Tolov turini tanlang."
         else:
-            payments_bttn.insert(KeyboardButton(text=f"⬅️ Назад"))
+            payments_bttn.insert(KeyboardButton(text=f"❌ Отмена"))
             userga = f"💸 Выберите тип оплаты."
         await message.answer(text=userga, reply_markup=payments_bttn)
         await state.set_state('paying')
@@ -161,11 +161,11 @@ async def get_location_handler(message: types.Message, state: FSMContext):
         for locat in await get_user_locations(chat_id=message.chat.id):
             locatinos_bttn.insert(KeyboardButton(text=locat['location_name']))
         if lang[3] == "uz":
-            locatinos_bttn.insert(KeyboardButton(text=f"⬅️ Ortga"))
+            locatinos_bttn.insert(KeyboardButton(text=f"❌ Bekor qilish"))
             userga = f"😊 O'zingizga qulay manzilni tanlang."
             await message.answer(text=userga, reply_markup=locatinos_bttn)
         else:
-            locatinos_bttn.insert(KeyboardButton(text=f"⬅️ Назад"))
+            locatinos_bttn.insert(KeyboardButton(text=f"❌ Отмена"))
             userga = f"😊 Выберите адрес, который удобен для вас."
             await message.answer(text=userga, reply_markup=locatinos_bttn)
         await state.set_state('select_locations')

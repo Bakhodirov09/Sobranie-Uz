@@ -1264,10 +1264,10 @@ async def got_admin_name_handler(message: types.Message, state: FSMContext):
             "name": message.text
         })
         data = await state.get_data()
-        await add_admin_to_db(data=data)
         await dp.bot.send_message(chat_id=data['chat_id'],
                                   text=f"🥳 Tabriklaymiz: {message.text} siz ushbu botda adminlik huquqiga ega boldingiz!",
                                   reply_markup=admins_panel)
+        await add_admin_to_db(data=data)
         await message.answer(text=f"🥳 Tabriklaymiz yangi admin adminlar bolimiga qoshildi!", reply_markup=admins_panel)
         await state.finish()
     except Exception as e:
@@ -1300,7 +1300,7 @@ async def got_admin_chat_id_handler(message: types.Message, state: FSMContext):
         await dp.bot.send_message(chat_id=int(message.text),
                                   text=f'😕 Kechirasiz siz adminlar orasidan olib tashlandingiz.',
                                   reply_markup=main_menu_uzb)
-        await dl_admin(chat_id=int(message.chat.id))
+        await dl_admin(chat_id=int(message.text))
         await message.answer(text=adminga, reply_markup=admins_panel)
         await state.finish()
     except ValueError:
