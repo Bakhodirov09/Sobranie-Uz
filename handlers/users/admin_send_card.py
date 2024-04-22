@@ -11,20 +11,24 @@ from utils.db_api.database_settings import update_user_status_order, get_user, g
 @dp.callback_query_handler()
 async def send_card_to_user(call: types.CallbackQuery, state: FSMContext):
     if call.data.isdigit():
-        await update_user_status_order(chat_id=int(call.data))
-        user = await get_user(chat_id=int(call.data))
-        if user[3] == "uz":
-            await dp.bot.send_message(chat_id=int(call.data), text=f"😊 Iltimos kuting admin sizga plastik karta tashlamoqda ...",
-                                      reply_markup=ReplyKeyboardRemove())
+        if await update_user_status_order(chat_id=int(call.data), work='get'):
+            user = await get_user(chat_id=int(call.data))
+            if user[3] == "uz":
+                await dp.bot.send_message(chat_id=int(call.data), text=f"😊 Iltimos kuting admin sizga plastik karta tashlamoqda ...",
+                                          reply_markup=ReplyKeyboardRemove())
+            else:
+                await dp.bot.send_message(chat_id=int(call.data),
+                                          text=f"😊 Пожалуйста подождите, администратор кидает вам пластиковую карту ...",
+                                          reply_markup=ReplyKeyboardRemove())
+            await state.update_data({
+                'chat_id': int(call.data)
+            })
+            await call.message.answer(text='😊 Foydalanuvchiga karta yuboring...', reply_markup=cancel_uz)
+            await state.set_state('admin_sending_card')
         else:
-            await dp.bot.send_message(chat_id=int(call.data),
-                                      text=f"😊 Пожалуйста подождите, администратор кидает вам пластиковую карту ...",
-                                      reply_markup=ReplyKeyboardRemove())
-        await state.update_data({
-            'chat_id': int(call.data)
-        })
-        await call.message.answer(text='😊 Foydalanuvchiga karta yuboring...', reply_markup=cancel_uz)
-        await state.set_state('admin_sending_card')
+            await call.message.delete()
+            await call.message.answer(text=f"😕 Kechirasiz ushbu user allaqachon karta kutmoqda yoki kartaga pul tashlab bolgan!", reply_markup=admins_panel)
+            await state.finish()
     elif call.data.endswith('_filial'):
         data = call.data.split('_')
 

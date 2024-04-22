@@ -137,7 +137,7 @@ async def open_menu_handler(message: types.Message, state: FSMContext):
     menus = await get_menu_ru()
     for meal in menus:
         menyu_ru.insert(InlineKeyboardButton(text=f"{meal['menu_name']}", callback_data=f"{meal['menu_name']}_ru"))
-    menyu_ru.insert(InlineKeyboardButton(text='🏘 Главное меню', callback_data='main_menu_ru'))
+    menyu_ru.insert(InlineKeyboardButton(text='🏘 Главное меню', callback_data='main_menu'))
     await message.answer(text=userga, reply_markup=main_menu_back_ru)
     await message.answer_photo(photo=photo['photo'], reply_markup=menyu_ru)
     await state.set_state('menu')
@@ -148,6 +148,7 @@ async def menu_handler(call: types.CallbackQuery, state: FSMContext):
     await call.message.delete()
     data = await state.get_data()
     lang = await get_user(chat_id=call.message.chat.id)
+    print(call.data)
     if await get_fast_foods_in_menu(menu_name=call.data[0:-3]):
         if call.data[-3:] == '_uz':
             await state.update_data({
@@ -159,7 +160,8 @@ async def menu_handler(call: types.CallbackQuery, state: FSMContext):
             userga = f'😋 {call.data[0:-3]} Menyu'
             for meal in await get_fast_foods_in_menu(menu_name=call.data[0:-3]):
                 meals.insert(InlineKeyboardButton(text=f'{meal["food_name"]}', callback_data=f'{meal["food_name"]}'))
-            meals.insert(InlineKeyboardButton(text=f'⬅️ Ortga', callback_data='back_uz'))
+            meals.insert(InlineKeyboardButton(text=f'⬅️ Ortga', callback_data=f'back_to_menu'))
+            meals.insert(InlineKeyboardButton(text=f"🏘 Asosiy menyu", callback_data='main_menu'))
             await call.message.answer_photo(photo=menu_pic['menu_picture'], caption=userga, reply_markup=meals)
             await state.set_state('menu')
         else:
@@ -172,8 +174,8 @@ async def menu_handler(call: types.CallbackQuery, state: FSMContext):
             userga = f'😋 {call.data[0:-3]} Меню'
             for meal in await get_fast_foods_in_menu(menu_name=call.data[0:-3]):
                 meals.insert(InlineKeyboardButton(text=f'{meal["food_name"]}', callback_data=f'{meal["food_name"]}'))
-            meals.insert(InlineKeyboardButton(text=f'⬅️ Назад', callback_data='back_ru'))
-            meals.insert(InlineKeyboardButton(text=f'🏘 Главное меню', callback_data='main_menu_ru'))
+            meals.insert(InlineKeyboardButton(text=f'⬅️ Назад', callback_data=f'back_to_menu_ru'))
+            meals.insert(InlineKeyboardButton(text=f'🏘 Главное меню', callback_data='main_menu'))
             await call.message.answer_photo(photo=menu_pic['menu_picture'], caption=userga, reply_markup=meals)
             await state.set_state('menu')
     elif await get_fast_food_in_menu(menu_name=data['menu_name'], fast_food_name=call.data):
@@ -193,15 +195,35 @@ async def menu_handler(call: types.CallbackQuery, state: FSMContext):
 Mahsulot Haqida: <b>{fast_food['description']}</b>
 💰 Narxi: {price}
 """
-            await call.message.answer_photo(photo=photo, caption=userga, reply_markup=await plus_minus_def(0, 0))
+            await call.message.answer_photo(photo=photo, caption=userga, reply_markup=await plus_minus_def(0, 0, back_bttn=fast_food['menu']))
         else:
             userga = f"""
 😋 {food_name}:\t
 О продукте: <b>{fast_food['description']}</b>
 💰 Цена: {price}
 """
-            await call.message.answer_photo(photo=photo, caption=userga, reply_markup=await plus_minus_def_ru(0, 0))
+            await call.message.answer_photo(photo=photo, caption=userga, reply_markup=await plus_minus_def_ru(0, 0, back_bttn=fast_food['menu']))
         await state.set_state('got_food')
+    elif call.data.split('_'):
+        call_data = call.data.split('_')
+        if call_data[1] == "to":
+            menuu = await get_menu_ru()
+            logo = await get_main_menu_logo()
+            menu_bttn = InlineKeyboardMarkup(row_width=2)
+            caption = ""
+            if call_data[-1] == "uz":
+                for item in menuu:
+                    menu_bttn.insert(InlineKeyboardButton(text=f"{item['menu_name']}", callback_data=f"{item['menu_name']}_uz"))
+                caption = '😋 Bizning menyu'
+                menu_bttn.insert(InlineKeyboardButton(text=f"🏘 Asosiy menyu", callback_data='main_menu'))
+            else:
+                for item in menuu:
+                    menu_bttn.insert(InlineKeyboardButton(text=f"{item['menu_name']}", callback_data=f"{item['menu_name']}_ru"))
+                caption = '😋 Наше меню'
+                menu_bttn.insert(InlineKeyboardButton(text=f"🏘 Главное меню", callback_data='main_menu'))
+            await call.message.answer_photo(photo=logo['photo'], caption=caption, reply_markup=menu_bttn)
+            await state.set_state('menu')
+
 
 
 @dp.callback_query_handler(state='got_food', text="plus")
@@ -222,10 +244,10 @@ async def plus_handler(call: types.CallbackQuery, state: FSMContext):
                                         menu_name=data['menu_name'])
         if lang[3] == "uz":
             await call.answer(text=f"{data['food_name']} Miqdori 1 taga oshirildi.")
-            await call.message.edit_reply_markup(reply_markup=await plus_minus_def(now=new_miq[2], price=new_miq[3]))
+            await call.message.edit_reply_markup(reply_markup=await plus_minus_def(now=new_miq[2], price=new_miq[3], back_bttn=data['menu_name']))
         else:
             await call.answer(text=f"Количество {data['food_name']} увеличено на 1.")
-            await call.message.edit_reply_markup(reply_markup=await plus_minus_def_ru(now=new_miq[2], price=new_miq[3]))
+            await call.message.edit_reply_markup(reply_markup=await plus_minus_def_ru(now=new_miq[2], price=new_miq[3], back_bttn=data['menu_name']))
     else:
         await add_product_to_basket(food_name=data['food_name'], narx=data['price'], chat_id=call.message.chat.id,
                                     menu_name=data['menu_name'])
@@ -233,10 +255,10 @@ async def plus_handler(call: types.CallbackQuery, state: FSMContext):
                                         menu_name=data['menu_name'])
         if lang[3] == "uz":
             await call.answer(text=f"{data['food_name']} Miqdori 1 taga oshirildi.")
-            await call.message.edit_reply_markup(reply_markup=await plus_minus_def(now=new_miq[2], price=new_miq[3]))
+            await call.message.edit_reply_markup(reply_markup=await plus_minus_def(now=new_miq[2], price=new_miq[3], back_bttn=data['menu_name']))
         else:
             await call.answer(text=f"Количество {data['food_name']} увеличено на 1.")
-            await call.message.edit_reply_markup(reply_markup=await plus_minus_def_ru(now=new_miq[2], price=new_miq[3]))
+            await call.message.edit_reply_markup(reply_markup=await plus_minus_def_ru(now=new_miq[2], price=new_miq[3], back_bttn=data['menu_name']))
 
 
 @dp.callback_query_handler(state='got_food', text=f"minus")
@@ -265,10 +287,10 @@ async def minus_handler(call: types.CallbackQuery, state: FSMContext):
         try:
             if lang[3] == "uz":
                 await call.message.edit_reply_markup(
-                    reply_markup=await plus_minus_def(now=int(new_miq['miqdor']), price=int(new_miq['narx'])))
+                    reply_markup=await plus_minus_def(now=int(new_miq['miqdor']), price=int(new_miq['narx']), back_bttn=data['menu_name']))
             else:
                 await call.message.edit_reply_markup(
-                    reply_markup=await plus_minus_def_ru(now=int(new_miq['miqdor']), price=int(new_miq['narx'])))
+                    reply_markup=await plus_minus_def_ru(now=int(new_miq['miqdor']), price=int(new_miq['narx']), back_bttn=data['menu_name']))
         except Exception as e:
             await call.message.delete()
             menuu = await get_fast_foods_in_menu(menu_name=data['menu_name'])
@@ -283,10 +305,10 @@ async def minus_handler(call: types.CallbackQuery, state: FSMContext):
                 products.insert(
                     InlineKeyboardButton(text=f"{product['food_name']}", callback_data=f"{product['food_name']}"))
             if lang[3] == "uz":
-                products.insert(InlineKeyboardButton(text=f"⬅️ Ortga", callback_data='back_uz'))
+                products.insert(InlineKeyboardButton(text=f"⬅️ Ortga", callback_data=f'back_menu_{menu_name[1:-6]}_uz'))
                 products.insert(InlineKeyboardButton(text=f"🏘 Asosiy menyu", callback_data='main_menu'))
             else:
-                products.insert(InlineKeyboardButton(text=f"⬅️ Назад", callback_data='back_ru'))
+                products.insert(InlineKeyboardButton(text=f"⬅️ Назад", callback_data=f'back_menu_{menu_name[1:-6]}_ru'))
                 products.insert(InlineKeyboardButton(text=f"🏘 Главное меню", callback_data='back_main_menu_ru'))
             await call.message.answer_photo(photo=menu_pic['menu_picture'], caption=menu_name, reply_markup=products)
             await state.set_state('menu')
@@ -296,6 +318,26 @@ async def minus_handler(call: types.CallbackQuery, state: FSMContext):
         else:
             await call.answer(text=f"😕 Товара должно быть не менее 1 шт.")
 
+@dp.callback_query_handler(state='got_food')
+async def back_bttn_handler(call: types.CallbackQuery, state: FSMContext):
+    await call.message.delete()
+    if call.data.split("_")[1] == "the":
+        print(call.data.split('_'))
+        menuu = await get_fast_foods_in_menu(menu_name=call.data.split("_")[3])
+        meals = InlineKeyboardMarkup(row_width=2)
+        for menyu in menuu:
+            meals.insert(
+                InlineKeyboardButton(text=f"{menyu['food_name']}", callback_data=f"{menyu['food_name']}"))
+        menu_pic = await get_menu_pic(menu_name=call.data.split("_")[3])
+        caption = ""
+        if call.data.split("_")[-1] == "uz":
+            caption = f'😋 {call.data.split("_")[2]} Menyu'
+            meals.insert(InlineKeyboardButton(text=f"⬅️ Ortga", callback_data='back_to_menu_uz'))
+        else:
+            caption = f'😋 {call.data.split("_")[2]} Меню'
+            meals.insert(InlineKeyboardButton(text=f"⬅️ Назад", callback_data='back_to_menu_ru'))
+        await call.message.answer_photo(photo=menu_pic['menu_picture'], caption=caption, reply_markup=meals)
+        await state.set_state('menu')
 
 @dp.message_handler(state="*", text=f"📥 Savat")
 async def get_user_basket_handler(message: types.Message, state: FSMContext):
@@ -497,6 +539,7 @@ async def sent_photo_to_curer_handler(message: types.Message, state: FSMContext)
     data = await state.get_data()
     user = await get_user(chat_id=message.chat.id)
     lang = await get_user(chat_id=message.chat.id)
+    await update_user_status_order(chat_id=message.chat.id, work='delete')
     userga = f""
     language = f""
     if user['lang'] == "uz":
@@ -522,7 +565,6 @@ async def sent_photo_to_curer_handler(message: types.Message, state: FSMContext)
                                payment_status="To'langan", go_or_order='Buyurtma qilingan', which_filial='null')
         total += int(product['narx'])
         curerga += f"<b>{product['product']}</b> \t|\t <b>{product['miqdor']}</b> \t|\t <b>{product['narx'] // product['miqdor']}</b> * <b>{product['miqdor']}</b> = <b>{product['narx']}</b>\n"
-    await update_user_status(chat_id=message.chat.id)
     curerga += f"💲 To'lov turi: {data['pay']}\n"
     curerga += f"💰 To'lov holati: <b>✅ To'langan</b>\n"
     curerga += f"➕ Ja'mi: {total}"
@@ -554,7 +596,7 @@ async def sent_photo_to_curer_handler(message: types.Message, state: FSMContext)
         else:
             await message.answer(
                 text=f"✅😔 Ваш заказ принят, но доставка может немного задержаться, поскольку нам не удалось найти безработного курьера. Приносим извинения за неудобства",
-                reply_markup=main_menu_uzb)
+                reply_markup=main_menu_rus)
     await state.finish()
 
 
@@ -1164,9 +1206,10 @@ async def socials_or_filials_handler1(message: types.Message, state: FSMContext)
 
 @dp.message_handler(text=f"📋 Мои заказы")
 async def my_orders_handler(message: types.Message, state: FSMContext):
-    orders = await get_all_orders(chat_id=message.chat.id)
+    orders = await get_history_buys(chat_id=message.chat.id)
     if orders:
-        for order in orders:
+        orderr = await get_all_orders(chat_id=message.chat.id)
+        for order in orderr:
             userga = f""
             abouts = []
             total = 0
@@ -1198,9 +1241,10 @@ async def my_orders_handler(message: types.Message, state: FSMContext):
 
 @dp.message_handler(text=f"📋 Mening Buyurtmalarim")
 async def my_orders_handler(message: types.Message, state: FSMContext):
-    orders = await get_all_orders(chat_id=message.chat.id)
+    orders = await get_history_buys(chat_id=message.chat.id)
     if orders:
-        for order in orders:
+        orderr = await get_all_orders(chat_id=message.chat.id)
+        for order in orderr:
             userga = f""
             abouts = []
             total = 0
@@ -1215,6 +1259,7 @@ async def my_orders_handler(message: types.Message, state: FSMContext):
                 userga += f"""
 <b>{i['product']}</b> <b>{i['price']}</b> * <b>{i['miqdor']}</b> = <b>{int(i['price']) * int(i['miqdor'])}</b>
 """
+            print(abouts)
             userga += f"""
 💰 Ja'mi: <b>{total}</b>
 📅 Sotib olingan sana: <b>{abouts[0]}</b>
@@ -1525,6 +1570,7 @@ async def user_dont_want_wait_handler(message: types.Message, state: FSMContext)
     data = await state.get_data()
     user = await get_user(chat_id=message.chat.id)
     lang = await get_user(chat_id=message.chat.id)
+    await update_user_status_order(chat_id=message.chat.id, work='delete')
     userga = f""
     language = f""
     if user['lang'] == "uz":
@@ -1547,10 +1593,9 @@ async def user_dont_want_wait_handler(message: types.Message, state: FSMContext)
         await add_history_buys(chat_id=message.chat.id, number=random_number, miqdor=product['miqdor'],
                                product=product['product'], price=product['narx'] // product['miqdor'],
                                bought_at=message.date, status='Yetkazilmoqda', pay=data['pay'],
-                               payment_status="To'lanmagan", go_or_order='Dostavka', which_filial='null')
+                               payment_status="To'lanmagan", go_or_order='Dostavka', which_filial='null', is_waiting=False)
         total += int(product['narx'])
         curerga += f"<b>{product['product']}</b> \t|\t <b>{product['miqdor']}</b> \t|\t <b>{product['narx'] // product['miqdor']}</b> * <b>{product['miqdor']}</b> = <b>{product['narx']}</b>\n"
-    await update_user_status(chat_id=message.chat.id)
     curerga += f"💲 To'lov turi: {data['pay']}\n"
     curerga += f"💰 To'lov holati: <b>❌ To'lanmagan</b>\n"
     curerga += f"<b>💳 Plastik karta kutyabdi</b>\n"

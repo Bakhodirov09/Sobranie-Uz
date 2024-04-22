@@ -345,4 +345,16 @@ filials_and_socials_bttn = ReplyKeyboardMarkup(
     ], resize_keyboard=True
 )
 
+filials_and_socials_bttn = ReplyKeyboardMarkup(
+    keyboard=[
+        [
+            KeyboardButton(text=f"📍 Filiallar"),
+            KeyboardButton(text=f"🌐 Ijtimoiy tarmoqlar")
+        ],
+        [
+            KeyboardButton(text=f"❌ Bekor Qilish")
+        ]
+    ], resize_keyboard=True
+)
+
 

@@ -11,7 +11,7 @@ lang_select = InlineKeyboardMarkup(
     ]
 )
 
-async def plus_minus_def(now, price):
+async def plus_minus_def(now, price, back_bttn):
     plus_minus = InlineKeyboardMarkup(
         inline_keyboard=[
             [
@@ -20,13 +20,13 @@ async def plus_minus_def(now, price):
                 InlineKeyboardButton(text=f'➕', callback_data='plus'),
             ],
             [
-                InlineKeyboardButton(text='⬅️ Menyuga qaytish', callback_data='back_main_menu')
+                InlineKeyboardButton(text='⬅️ Menyuga qaytish', callback_data=f'back_the_menu_{back_bttn}_uz')
             ]
         ]
     )
     return plus_minus
 
-async def plus_minus_def_ru(now: int, price: int):
+async def plus_minus_def_ru(now: int, price: int, back_bttn):
     plus_minus = InlineKeyboardMarkup(
         inline_keyboard=[
             [
@@ -35,7 +35,7 @@ async def plus_minus_def_ru(now: int, price: int):
                 InlineKeyboardButton(text=f'➕', callback_data='plus'),
             ],
             [
-                InlineKeyboardButton(text='⬅️ Вернуться в меню', callback_data='back_main_menu_ru')
+                InlineKeyboardButton(text='⬅️ Вернуться в меню', callback_data=f'back_the_menu_{back_bttn}_ru')
             ]
         ]
     )

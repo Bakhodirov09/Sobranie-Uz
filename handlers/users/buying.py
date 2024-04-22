@@ -234,18 +234,21 @@ async def paying_handler(message: types.Message, state: FSMContext):
         total += int(product['narx'])
         curerga += f"<b>{product['product']}</b> {int(product['narx']) // int(product['miqdor'])} * {product['miqdor']} = {product['narx']}\n"
         await add_number_buys(chat_id=message.chat.id, number=random_number)
+        pay = False
+        if message.text[0] != "💸":
+            pay = True
         if data.get('go_or_order'):
             await add_history_buys(chat_id=message.chat.id, number=random_number, miqdor=product['miqdor'],
                                    product=product['product'], price=product['narx'] // product['miqdor'],
                                    bought_at=message.date, status='Tayyorlanmoqda', pay=data['pay'],
                                    payment_status="To'lanmagan", go_or_order=data['go_or_order'][2:],
-                                   which_filial=data['filial'])
+                                   which_filial=data['filial'], is_waiting=pay)
         else:
             await add_history_buys(chat_id=message.chat.id, number=random_number, miqdor=product['miqdor'],
                                    product=product['product'], price=product['narx'] // product['miqdor'],
                                    bought_at=message.date, status='Tayyorlanmoqda', pay=data['pay'],
                                    payment_status="To'lanmagan", go_or_order="Dostavka",
-                                   which_filial="null")
+                                   which_filial="null", is_waiting=pay)
     curerga += f"\n💸 To'lov turi: <b>{data['pay']}</b>"
     curerga += f"\n💰 Ja'mi: <b>{total}</b>"
     if data.get('location_name'):
@@ -320,6 +323,6 @@ async def paying_handler(message: types.Message, state: FSMContext):
                 else:
                     await message.answer(
                         text=f"✅😕 Ваш заказ принят, но доставка может немного задержаться, поскольку нам не удалось найти безработного курьера. Приносим извинения за неудобства",
-                        reply_markup=main_menu_uzb)
+                        reply_markup=main_menu_rus)
             await delete_user_basket(chat_id=message.chat.id)
             await state.finish()

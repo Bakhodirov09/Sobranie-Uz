@@ -113,7 +113,7 @@ history_buys = sqlalchemy.Table(
     sqlalchemy.Column("payment_status", sqlalchemy.String),
     sqlalchemy.Column("go_or_order", sqlalchemy.String),
     sqlalchemy.Column("which_filial", sqlalchemy.String, nullable=True),
-    sqlalchemy.Column("chat_id", sqlalchemy.BigInteger)
+    sqlalchemy.Column("chat_id", sqlalchemy.BigInteger),
 )
 
 filial_admins = sqlalchemy.Table(

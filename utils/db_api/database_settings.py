@@ -271,10 +271,13 @@ async def add_user_to_order(chat_id):
             status=True
         ))
 
-async def update_user_status_order(chat_id):
-    return await database.execute(query=ordering.update().values(
-        status=False
-    ).where(ordering.c.chat_id==chat_id))
+async def update_user_status_order(chat_id, work):
+    if work == 'get':
+        return await database.fetch_one(query=ordering.select().where(ordering.c.chat_id==chat_id))
+    elif work == 'delete':
+        return await database.execute(query=ordering.delete().where(ordering.c.chat_id==chat_id))
+    else:
+        return await database.execute(query=ordering.delete().where(ordering.c.chat_id == chat_id))
 
 async def update_user_name(chat_id, new_name):
     return await database.execute(query=users.update().values(
@@ -325,6 +328,9 @@ async def get_all_orders(chat_id):
         order_number.c.chat_id==chat_id
     ))
 
+async def get_history_buys(chat_id):
+    return await database.fetch_all(query=history_buys.select().where(history_buys.c.chat_id==chat_id))
+
 async def get_all_socials():
     return await database.fetch_all(query=socials.select())
 
@@ -347,7 +353,7 @@ async def change_about(new_about):
 async def get_about_we():
     return await database.fetch_one(query=about_we.select())
 
-async def add_history_buys(chat_id, number, miqdor, product, price, bought_at, status, pay, payment_status,go_or_order, which_filial):
+async def add_history_buys(chat_id, number, miqdor, product, price, bought_at, status, pay, payment_status,go_or_order, which_filial, is_waiting=None):
     return await database.execute(query=history_buys.insert().values(
         number=number,
         product=product,
@@ -359,8 +365,13 @@ async def add_history_buys(chat_id, number, miqdor, product, price, bought_at, s
         payment_status=payment_status,
         go_or_order=go_or_order,
         which_filial=which_filial,
-        chat_id=chat_id
+        chat_id=chat_id,
     ))
+
+async def update_user_waiting_status(chat_id, number):
+    return await database.execute(query=history_buys.update().values(
+        is_waiting=False
+    ).where(history_buys.c.chat_id == chat_id, history_buys.c.number == number))
 
 async def delete_user_basket(chat_id):
     return await database.execute(query=basket.delete().where(basket.c.chat_id==chat_id))
