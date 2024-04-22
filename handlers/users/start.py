@@ -1627,7 +1627,7 @@ async def user_dont_want_wait_handler(message: types.Message, state: FSMContext)
         else:
             await message.answer(
                 text=f"✅😕 Ваш заказ принят, но доставка может немного задержаться, поскольку нам не удалось найти безработного курьера. Приносим извинения за неудобства",
-                reply_markup=main_menu_uzb)
+                reply_markup=main_menu_rus)
     await state.finish()
 
 
