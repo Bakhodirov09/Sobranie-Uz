@@ -31,8 +31,29 @@ async def get_fast_foods_in_menu(menu_name):
 async def get_user_miqdor(chat_id, fast_food, menu_name):
     return await database.fetch_one(query=basket.select().where(basket.c.product==fast_food, basket.c.menu_name==menu_name, basket.c.chat_id==chat_id))
 
+async def get_product_id(id):
+    return await database.fetch_one(query=basket.select().where(basket.c.id==id))
+
+async def update_quantity(id):
+    narx = await get_product_id(id=id)
+    price = narx['narx'] // narx['miqdor']
+    miqdor = narx['miqdor'] + 1
+    return await database.execute(query=basket.update().values(miqdor=int(narx['miqdor'])+1, narx=price*miqdor).where(basket.c.id==id))
+
+async def update_quantity_minus(chat_id, id):
+    last_quantity = await get_product_id(id=id)
+    price = last_quantity['narx'] // last_quantity['miqdor']
+    if last_quantity['miqdor'] > 1:
+        miqdor = last_quantity['miqdor'] - 1
+        await database.execute(query=basket.update().values(miqdor=int(last_quantity['miqdor']) - 1, narx=price*miqdor).where(basket.c.id == id))
+        return None
+    else:
+        product = await get_product_id(id=id)
+        await database.execute(query=basket.delete().where(basket.c.id == id))
+        return f'deleted_{product[1]}_{"yes" if await get_user_basket(chat_id=chat_id) else "no"}'
+
 async def get_user_basket(chat_id):
-    return await database.fetch_all(query=basket.select().where(basket.c.chat_id==chat_id))
+    return await database.fetch_all(query=basket.select().where(basket.c.chat_id==chat_id).order_by(basket.c.id))
 
 async def update_product_miqdor(miqdor, product_name, chat_id, menu_name, narx):
     new_miqdor = int(miqdor) + 1

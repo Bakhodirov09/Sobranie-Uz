@@ -4,6 +4,7 @@ import middlewares, filters, handlers
 from main.database_set import database
 from utils.notify_admins import *
 from utils.set_bot_commands import set_default_commands
+
 async def on_startup(dispatcher):
     await database.connect()
     await set_default_commands(dispatcher)

@@ -11,8 +11,70 @@ from loader import dp, types
 from utils.db_api.database_settings import get_user, add_new_location_to_db, select_payments, get_user_locations, \
     add_user_to_order, bosh_curer, delete_user_basket, get_all_curers, get_user_basket, \
     get_all_filials, get_lat_long, get_filial, get_filial_admin, get_all_admins, add_history_buys, add_order_curer, \
-    add_count_to_curer, get_order_with_id, add_number_buys
+    add_count_to_curer, get_order_with_id, add_number_buys, update_quantity, update_quantity_minus
 
+
+@dp.callback_query_handler(state='in_basket')
+async def update_quantity_handler(call: types.CallbackQuery, state: FSMContext):
+    call_data = call.data.split('_')
+    minus = None
+    if call_data[-2] == "plus":
+        await update_quantity(id=int(call_data[-3]))
+    else:
+        minus = await update_quantity_minus(chat_id=call.message.chat.id, id=int(call_data[-3]))
+    user_basket_bttn = ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
+    if call_data[-1] == "uz":
+        user_basket_bttn.insert(KeyboardButton(text=f"🏘 Главное меню"))
+        user_basket_bttn.insert(KeyboardButton(text="🛍 Разместить заказ"))
+        userga = f"😊🛒 Sizning savatingiz\n\n"
+        basket_bttn = InlineKeyboardMarkup()
+        total = 0
+        counter = 0
+        for basket in await get_user_basket(chat_id=call.message.chat.id):
+            counter += 1
+            basket_bttn.insert(InlineKeyboardButton(text=f'➖', callback_data=f'update_quantity_{basket["id"]}_minus_uz'))
+            basket_bttn.insert(InlineKeyboardButton(text=f'{counter}', callback_data=f'id'))
+            basket_bttn.insert(InlineKeyboardButton(text=f'➕', callback_data=f'update_quantity_{basket["id"]}_plus_uz'))
+            total += basket['narx']
+            userga += f"<b>{counter}</b>. <b>{basket['product']}</b> {int(basket['narx']) // int(basket['miqdor'])} * {basket['miqdor']} = {basket['narx']}\n"
+            user_basket_bttn.insert(KeyboardButton(text=f"❌ {basket['product']}"))
+        userga += f"\n💰 Ja'mi: <b>{total}</b>"
+    else:
+        user_basket_bttn.insert(KeyboardButton(text=f"🏘 Главное меню"))
+        user_basket_bttn.insert(KeyboardButton(text="🛍 Разместить заказ"))
+        userga = f"😊🛒 Ваша Корзина.\n\n"
+        basket_bttn = InlineKeyboardMarkup()
+        total = 0
+        counter = 0
+        for basket in await get_user_basket(chat_id=call.message.chat.id):
+            counter += 1
+            basket_bttn.insert(
+                InlineKeyboardButton(text=f'➖', callback_data=f'update_quantity_{basket["id"]}_minus_ru'))
+            basket_bttn.insert(InlineKeyboardButton(text=f'{counter}', callback_data=f'id'))
+            basket_bttn.insert(InlineKeyboardButton(text=f'➕', callback_data=f'update_quantity_{basket["id"]}_plus_ru'))
+            total += basket['narx']
+            userga += f"<b>{counter}</b>. <b>{basket['product']}</b> {int(basket['narx']) // int(basket['miqdor'])} * {basket['miqdor']} = {basket['narx']}\n"
+            user_basket_bttn.insert(KeyboardButton(text=f"❌ {basket['product']}"))
+        userga += f"\n💰 Общий: <b>{total}</b>"
+    if basket_bttn != None:
+        await call.message.edit_text(text=userga, reply_markup=basket_bttn)
+    else:
+        await call.message.delete()
+        if call_data[-1] == "uz":
+            await call.message.answer(text=f"✅ Savat tozalandi.")
+        else:
+            await call.message.answer(text=f"✅ Корзина очищена.")
+
+    if minus != None:
+        await call.message.delete()
+        if call_data[-1] == "uz":
+            await call.message.answer(text=f"✅ {minus.split('_')[1].title()} savatdan olib tashlandi.", reply_markup=user_basket_bttn if minus.split('_')[-1] == "yes" else main_menu_uzb)
+        else:
+            await call.message.answer(text=f'✅ {minus.split("_")[1].title()} вынули из корзины.', reply_markup=user_basket_bttn if minus.split('_')[-1] == "yes" else main_menu_rus)
+        if minus.split('_')[-1] == "yes":
+            await call.message.answer(text=userga, reply_markup=basket_bttn)
+        else:
+            await state.finish()
 
 @dp.message_handler(state='in_basket', text="🛍 Buyurtma berish")
 async def buy_product_handler(message: types.Message, state: FSMContext):
@@ -230,10 +292,10 @@ async def paying_handler(message: types.Message, state: FSMContext):
 🆔 Buyurtma raqami: {random_number}
 🛍 Mahsulotlar:\n
 """
+    await add_number_buys(chat_id=message.chat.id, number=random_number)
     for product in await get_user_basket(chat_id=message.chat.id):
         total += int(product['narx'])
         curerga += f"<b>{product['product']}</b> {int(product['narx']) // int(product['miqdor'])} * {product['miqdor']} = {product['narx']}\n"
-        await add_number_buys(chat_id=message.chat.id, number=random_number)
         pay = False
         if message.text[0] != "💸":
             pay = True

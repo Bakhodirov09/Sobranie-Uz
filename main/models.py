@@ -59,6 +59,7 @@ curers = sqlalchemy.Table(
 basket = sqlalchemy.Table(
     "basket",
     metadata,
+    sqlalchemy.Column('id', sqlalchemy.Integer, primary_key=True),
     sqlalchemy.Column("product", sqlalchemy.String),
     sqlalchemy.Column("menu_name", sqlalchemy.String),
     sqlalchemy.Column("miqdor", sqlalchemy.Integer),
