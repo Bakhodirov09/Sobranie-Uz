@@ -1,4 +1,5 @@
 import random
+from datetime import timedelta
 
 from aiogram import types
 from aiogram.dispatcher import FSMContext
@@ -11,7 +12,6 @@ from keyboards.default.default_keyboards import *
 from keyboards.inline.inline_keyboards import *
 from loader import dp
 from states.states import *
-
 
 @dp.message_handler(CommandStart())
 async def start_handler(message: types.Message, state: FSMContext):
@@ -561,7 +561,6 @@ async def sent_photo_to_curer_handler(message: types.Message, state: FSMContext)
         language = f"🇺🇿 Uzbek tili"
     else:
         language = f"🇷🇺 Rus tili"
-    ishsiz_curer = await bosh_curer()
     random_number = random.randint(1000000, 1000000000)
     curerga = f"""
 👤 To'liq ism: <b>{user['full_name']}</b>
@@ -585,9 +584,9 @@ async def sent_photo_to_curer_handler(message: types.Message, state: FSMContext)
     curerga += f"➕ Ja'mi: {total}"
     bttn = InlineKeyboardMarkup(row_width=1)
     bttn.insert(InlineKeyboardButton(text=f"✅ Mahsulot yetkazildi", callback_data=f"{message.chat.id}a"))
-    if ishsiz_curer:
-        await dp.bot.send_photo(chat_id=ishsiz_curer['chat_id'], photo=data['screenshot'], caption=curerga)
-        await dp.bot.send_location(chat_id=ishsiz_curer['chat_id'], latitude=data['latitude'],
+    for admin in await get_all_admins():
+        await dp.bot.send_photo(chat_id=admin['chat_id'], photo=data['screenshot'], caption=curerga)
+        await dp.bot.send_location(chat_id=admin['chat_id'], latitude=data['latitude'],
                                    longitude=data['longitude'])
         if lang[3] == "uz":
             await message.answer(text=f"✅ Buyurtmangiz qabul qilindi.\n\n🆔 Buyurtma raqamingiz: {random_number}",
@@ -595,27 +594,141 @@ async def sent_photo_to_curer_handler(message: types.Message, state: FSMContext)
         else:
             await message.answer(text=f"✅ Ваш заказ принят.\n\n🆔 Номер вашего заказа: {random_number}",
                                  reply_markup=main_menu_rus)
-    else:
-        all_curers = await get_all_curers()
-        curers = []
-        for curer in all_curers:
-            curers.append(curer['chat_id'])
-        random_curer = random.choice(curers)
-        await dp.bot.send_photo(chat_id=random_curer, photo=data['screenshot'], caption=curerga)
-        await dp.bot.send_location(chat_id=random_curer, latitude=data['latitude'],
-                                   longitude=data['longitude'])
-        if lang[3] == "uz":
-            await message.answer(
-                text=f"✅😔 Buyurtmangiz qabul qilindi ammo bo'sh kuryer topilmaganligi sabab buyurtmangiz ozgina kechikishi mumkin.Noqulayliklar uchun uzr so'raymiz",
-                reply_markup=main_menu_uzb)
-        else:
-            await message.answer(
-                text=f"✅😔 Ваш заказ принят, но доставка может немного задержаться, поскольку нам не удалось найти безработного курьера. Приносим извинения за неудобства",
-                reply_markup=main_menu_rus)
+
     await state.finish()
 
 
 # Admin Functions
+
+@dp.message_handler(text=f"🌐 Radius sozlamalari")
+async def radius_settings_handler(message: types.Message, state: FSMContext):
+    if await is_admin(chat_id=message.chat.id):
+        await message.answer(text=f"{message.text}", reply_markup=radius_settings)
+        await state.set_state('setting_radius')
+    else:
+        await message.answer(text=f"🙅‍♂️ Kirish ta'qiqlanadi", reply_markup=main_menu_uzb)
+        await state.finish()
+
+@dp.message_handler(state='setting_radius')
+async def setting_radius_handler(message: types.Message, state: FSMContext):
+    if message.text[0] == "💸":
+        adminga = f"💸 Radius narxlari.\n\n"
+        for radius in await get_all_radius():
+            adminga += f"🆔 {radius['id']} 🛣 {radius['radius']} km -> 💸 <b>{radius['sum']}</b> So'm\n"
+        await message.answer(text=adminga)
+    elif message.text[0] == "❌":
+        adminga = f"🌐 Radiuslar\n\n"
+        for radius in await get_all_radius():
+            adminga += f"🆔 {radius['id']} 🛣 {radius['radius']} km -> 💸 <b>{radius['sum']}</b> So'm\n"
+        adminga += f"\n\n‼️ Olib tashlamoqchi bo'lgan radiusingizni id raqamini kiriting."
+        await message.answer(text=adminga, reply_markup=cancel_uz)
+        await state.set_state('select_id_for_radius')
+    elif message.text[0] == f"➕":
+        await message.answer(text=f"✍️ Yangi radius uchun km kiriting masalan: 5 km", reply_markup=cancel_uz)
+        await state.set_state('write_km_for_add_radius')
+    elif message.text[0] == "🌐":
+        adminga = f"🌐 Radiuslar\n\n"
+        for radius in await get_all_radius():
+            adminga += f"🆔 {radius['id']} 🛣 {radius['radius']} km -> 💸 <b>{radius['sum']}</b> So'm\n"
+        adminga += f"\n\n‼️ O'zgartirmoqchi bo'lgan radiusingizni id raqamini kiriting."
+        await message.answer(text=adminga, reply_markup=cancel_uz)
+        await state.set_state('select_id_for_update_radius')
+    else:
+        await message.answer(text=f"🙅‍♂️ Function not found", reply_markup=admins_panel)
+        await state.finish()
+
+# Delete radius
+@dp.message_handler(state=f"select_id_for_radius")
+async def select_id_for_radius_handler(message: types.Message, state: FSMContext):
+    try:
+        radius = await get_all_radius(work='GET', pk=int(message.text))
+        await state.update_data({
+            'pk': int(message.text)
+        })
+        adminga = f"🛣 {radius[1]} {radius[2]}"
+        adminga += f"\n\nHaqiqatdan ham {radius[1]} km lik radiusni ochirib yuborasizmi?"
+        await message.answer(text=adminga, reply_markup=yes_no_def)
+        await state.set_state('really_delete_this_radius')
+    except ValueError:
+        await message.answer(text=f"😕 Kechirasiz siz id raqamni butun sonda kiritmadingiz!")
+        await state.set_state("select_id_for_radius")
+    except Exception as e:
+        print(e)
+        await message.answer(text=f"😕 Kechirasiz bunday id raqamdagi radius topilmadi yoki botda hatolik!\n\n‼️Iltimos bu haqida dasturchiga habar bering!\n\nDasturchi:@bakhodirovv_09")
+        await state.finish()
+
+@dp.message_handler(state=f"really_delete_this_radius")
+async def really_delete_this_radius_handler(message: types.Message, state: FSMContext):
+    data = await state.get_data()
+    await get_all_radius(work='delete', pk=data['pk'])
+    await message.answer(text=f"✅ Radius muvaffaqqiyatli ochirib yuborildi.", reply_markup=admins_panel)
+    await state.finish()
+# Adding radius
+@dp.message_handler(state=f"write_km_for_add_radius")
+async def write_km_for_add_radius_handler(message: types.Message, state: FSMContext):
+    try:
+        await state.update_data({
+            'radius': int(message.text)
+        })
+        await message.answer(text=f"{message.text} km uchun summa kiriting.\nMasalan: 20000 So'm")
+        await state.set_state('write_sum_for_add_radius')
+    except ValueError:
+        await message.answer(text=f"‼️ Kechirasiz km ni faqat sonlarda kiriiting.", reply_markup=cancel_uz)
+        await state.set_state("write_km_for_add_radius")
+    except:
+        await message.answer(text=f"😕 Kechirasiz botda hatolik!\n\n‼️Iltimos bu haqida dasturchiga habar bering!\n\nDasturchi:@bakhodirovv_09")
+        await state.finish()
+
+@dp.message_handler(state='write_sum_for_add_radius')
+async def write_sum_for_add_radius_handler(message: types.Message, state: FSMContext):
+    try:
+        await state.update_data({
+            'sum': int(message.text)
+        })
+        data = await state.get_data()
+        await get_all_radius(work="add", data=data)
+        await message.answer(text=f"✅ Muvaffaqqiyatli", reply_markup=admins_panel)
+        await state.finish()
+    except ValueError:
+        await message.answer(text=f"‼️ Summani faqat butun sonlarda kiriting.", reply_markup=cancel_uz)
+        await state.set_state('write_sum_for_add_radius')
+    except:
+        await message.answer(text=f"😕 Kechirasiz botda hatolik!\n\n‼️Iltimos bu haqida dasturchiga habar bering!\n\nDasturchi:@bakhodirovv_09")
+        await state.finish()
+# Update radius
+
+@dp.message_handler(state='select_id_for_update_radius')
+async def select_id_for_update_radius_handler(message: types.Message, state: FSMContext):
+    try:
+        await state.update_data({
+            'pk': int(message.text)
+        })
+        await message.answer(text=f"😊 Ushbu radius uchun yangi narx kiriting.", reply_markup=cancel_uz)
+        await state.set_state('write_sum_for_update_radius')
+    except ValueError:
+        await message.answer(text=f"😕 Kechirasiz siz id raqamni faqat butun sonlarda kiritish mumkin!", reply_markup=cancel_uz)
+        await state.set_state('select_id_for_update_radius')
+    except:
+        await message.answer(text=f"😕 Kechirasiz botda hatolik!\n\n‼️Iltimos bu haqida dasturchiga habar bering!\n\nDasturchi:@bakhodirovv_09")
+        await state.finish()
+
+@dp.message_handler(state='write_sum_for_update_radius')
+async def write_sum_for_update_radius_handler(message: types.Message, state: FSMContext):
+    try:
+        await state.update_data({
+            'sum': int(message.text)
+        })
+        data = await state.get_data()
+        await get_all_radius(work='update', data=data)
+        await message.answer(text=f"✅ Muvaffaqqiyatli.", reply_markup=admins_panel)
+        await state.finish()
+    except ValueError:
+        await message.answer(text=f"😕 Kechirasiz ushbu radius uchun summani butun sonlarda kiriting!\nMasalan: 50000")
+        await state.set_state('write_sum_for_update_radius')
+    except:
+        await message.answer(text=f"😕 Kechirasiz botda hatolik!\n\n‼️Iltimos bu haqida dasturchiga habar bering!\n\nDasturchi:@bakhodirovv_09")
+        await state.finish()
+
 
 @dp.message_handler(text="⚙️🍴 Menyuni o'zgartirish")
 async def set_menu_handler(message: types.Message, state: FSMContext):
@@ -1114,7 +1227,7 @@ async def updating_meal_price_handler(message: types.Message, state: FSMContext)
         await message.answer(text=adminga, reply_markup=admins_panel)
         await state.finish()
 
-@dp.message_handler(text=f"ℹ️ Ma'lumot o'zgartirish ")
+@dp.message_handler(text=f"ℹ️ Ma'lumot o'zgartirish")
 async def change_about_handler(message: types.Message, state: FSMContext):
     if await is_admin(chat_id=message.chat.id):
         await message.answer(text=f"😊 Yangi ma'lumotni kiriting.", reply_markup=cancel_uz)
@@ -1192,16 +1305,16 @@ async def socials_or_filials_handler1(message: types.Message, state: FSMContext)
             await message.answer_location(latitude=filial['latitude'], longitude=filial['longitude'])
             await message.answer(text=f"📍 {filial['filial_name']}")
     else:
-        userga = f"😊 Bizning ijtimoy tarmqodagi sahifalarimiz"
+        userga = f"😊 Bizning ijtimoy tarmqodagi sahifalarimiz\n\n"
         for social in await get_all_socials():
-            userga += f"<a href={social['link']}>{social['social_name']}</a>"
+            userga += f"<a href='{social['link']}'>{social['social_name']}</a>\n"
         photo = await get_main_menu_logo()
-        await message.answer_photo(photo=photo, caption=userga, reply_markup=main_menu_uzb, parse_mode='HTML')
+        await message.answer_photo(photo=photo['photo'], caption=userga, reply_markup=main_menu_uzb, parse_mode='HTML')
     await state.finish()
 
 @dp.message_handler(text=f"🏘 🌐 Филиалы и социальные сети")
 async def filials_and_socials_handler(message: types.Message, state: FSMContext):
-    await message.answer(text=f"😊 Выберите один из следующих вариантов.", reply_markup=filials_and_socials_bttn)
+    await message.answer(text=f"😊 Выберите один из следующих вариантов.", reply_markup=filials_and_socials_bttn_ru)
     await state.set_state('filials_or_socials_ru')
 
 @dp.message_handler(state=f"filials_or_socials_ru")
@@ -1210,21 +1323,20 @@ async def socials_or_filials_handler1(message: types.Message, state: FSMContext)
         await message.answer(text=f"😊 Все наши филиалы")
         for filial in await get_all_filials(lang="ru"):
             await message.answer_location(latitude=filial['latitude'], longitude=filial['longitude'])
-            await message.answer(text=f"📍 {filial['filial_name']}")
+            await message.answer(text=f"📍 {filial['filial_name']}", reply_markup=main_menu_rus)
     else:
-        userga = f"😊 Наши страницы в социальных сетях"
+        userga = f"😊 Наши страницы в социальных сетях\n\n"
         for social in await get_all_socials():
-            userga += f"<a href={social['link']}>{social['social_name']}</a>\n\n"
+            userga += f"<a href='{social['link']}'>{social['social_name']}</a>\n"
         photo = await get_main_menu_logo()
-        await message.answer_photo(photo=photo, caption=userga, reply_markup=main_menu_uzb, parse_mode='HTML')
+        await message.answer_photo(photo=photo['photo'], caption=userga, reply_markup=main_menu_rus, parse_mode='HTML')
     await state.finish()
 
 @dp.message_handler(text=f"📋 Мои заказы")
 async def my_orders_handler(message: types.Message, state: FSMContext):
     orders = await get_history_buys(chat_id=message.chat.id)
     if orders:
-        orderr = await get_all_orders(chat_id=message.chat.id)
-        for order in orderr:
+        for order in await get_all_orders(chat_id=message.chat.id):
             userga = f""
             abouts = []
             total = 0
@@ -1236,13 +1348,11 @@ async def my_orders_handler(message: types.Message, state: FSMContext):
                 abouts.append(i['payment_status'])
                 abouts.append(i['payment_method'])
                 total += int(i['price']) * int(i['miqdor'])
-                userga += f"""
-<b>{i['product']}</b> <b>{i['price']}</b> * <b>{i['miqdor']}</b> = <b>{int(i['price']) * int(i['miqdor'])}</b>
-"""
+                userga += f"<b>{i['product']}</b> <b>{i['price']}</b> * <b>{i['miqdor']}</b> = <b>{int(i['price']) * int(i['miqdor'])}</b>\n"
             userga += f"""
-💰 Общий: <b>{total}</b>
+\n💰 Общий: <b>{total}</b>
 📅 Дата покупки: <b>{abouts[0]}</b>
-‼️ Положение дел: <b>{translate_uz_to_ru(text=abouts[1])}</b>
+‼️ Статус заказа: <b>{translate_uz_to_ru(text=abouts[1])}</b>
 🚚 Тип заказа: <b>{translate_uz_to_ru(text=abouts[2])}</b>
 💸 Способ оплаты: <b>{translate_uz_to_ru(text=abouts[4])}</b>
 💲 Статус платежа: <b>{abouts[5]}</b>
@@ -1258,13 +1368,11 @@ async def my_orders_handler(message: types.Message, state: FSMContext):
 async def my_orders_handler(message: types.Message, state: FSMContext):
     orders = await get_history_buys(chat_id=message.chat.id)
     if orders:
-        orderr = await get_all_orders(chat_id=message.chat.id)
-        for order in orderr:
+        for order in await get_all_orders(chat_id=message.chat.id):
             userga = f""
             abouts = []
             total = 0
-            orderrrr = await get_order_with_id(order_number=order['number'])
-            for i in orderrrr:
+            for i in await get_order_with_id(order_number=order['number']):
                 abouts.append(i['bought_at'])
                 abouts.append(i['status'])
                 abouts.append(i['go_or_order'])
@@ -1272,11 +1380,9 @@ async def my_orders_handler(message: types.Message, state: FSMContext):
                 abouts.append(i['payment_status'])
                 abouts.append(i['payment_method'])
                 total += int(i['price']) * int(i['miqdor'])
-                userga += f"""
-<b>{i['product']}</b> <b>{i['price']}</b> * <b>{i['miqdor']}</b> = <b>{int(i['price']) * int(i['miqdor'])}</b>
-"""
+                userga += f"<b>{i['product']}</b> <b>{i['price']}</b> * <b>{i['miqdor']}</b> = <b>{int(i['price']) * int(i['miqdor'])}</b>\n"
             userga += f"""
-💰 Ja'mi: <b>{total}</b>
+\n💰 Ja'mi: <b>{total}</b>
 📅 Sotib olingan sana: <b>{abouts[0]}</b>
 ‼️ Status: <b>{abouts[1]}</b>
 🚚 Buyurtma turi: <b>{abouts[2]}</b>
@@ -1301,6 +1407,32 @@ async def admin_handler(message: types.Message, state: FSMContext):
         userga = f"😕 Kechirasiz siz adminlik xuquqiga ega emassiz!\nBu funksiya faqat adminlar uchun!"
         await message.answer(text=userga, reply_markup=main_menu_uzb)
 
+@dp.message_handler(text="✅⚙️ Xabar yuborish sozlamalari")
+async def settings_send_message_handler(message: types.Message, state: FSMContext):
+    await message.answer(text=f"✍️ Yangi xabar kiriting.", reply_markup=cancel_uz)
+    await state.set_state('get_new_message_')
+
+@dp.message_handler(state='get_new_message_')
+async def get_new_message_handler(message: types.Message, state: FSMContext):
+    # With translater
+    await update_user_message(text=message.text)
+    await message.answer(text=f"✅ Xabar o'zgartirildi", reply_markup=admins_panel)
+    await state.finish()
+    # Without translater
+    # await state.update_data({
+    #     'message_uz': message.text
+    # })
+    # await message.answer(text=f"✍️🇷🇺 Ushbu textni endi rus tilida kiriting.")
+    # await state.set_state('get_new_message_ru_')
+
+@dp.message_handler(state='get_new_message_ru_')
+async def get_new_message_ru_handler(message: types.Message, state: FSMContext):
+    await state.update_data({
+        'message_ru': message.text
+    })
+    data = await state.get_data()
+    await update_user_message(data=data)
+    await message.answer(text=f"✅ Xabar o'zgartirildi", reply_markup=admins_panel)
 
 @dp.message_handler(state="sending_admin_chat_id")
 async def admin_handler(message: types.Message, state: FSMContext):
@@ -1388,79 +1520,107 @@ async def get_all_admins_handler(message: types.Message, state: FSMContext):
     await state.finish()
 
 
-@dp.message_handler(text="🚚 Kuryerlar")
-async def curers_handler(message: types.Message, state: FSMContext):
+@dp.message_handler(text='✅ Xabar yuborish')
+async def send_message_to_users_handler(message: types.Message, state: FSMContext):
     if await is_admin(chat_id=message.chat.id):
-        adminga = f"Quyidagi bolimdan birini tanlang."
-        await message.answer(text=adminga, reply_markup=curers)
-        await state.set_state('setting_curer')
+        users_history = await get_users_history_buys()
+        from datetime import datetime
+        three_days_ago = datetime.now() - timedelta(days=3)
+
+        message_user = await get_user_message()
+        last_sent = 0
+        for history in users_history:
+            purchase_date = history['bought_at']
+            if history['sent'] == False and purchase_date <= three_days_ago:
+                if history['number'] != last_sent:
+                    user = await get_user(chat_id=history['chat_id'])
+                    if user[3] == "ru":
+                        await message.answer(text=message_user['message_ru'], reply_markup=main_menu_rus)
+                    else:
+                        await message.answer(text=message_user['message_uz'], reply_markup=main_menu_uzb)
+                    await update_history_buys_sent(chat_id=history['chat_id'], number=history['number'])
+                    last_sent = history['number']
+                    await state.finish()
+        await message.answer(text=f'✅ Muvaffaqqiyatli', reply_markup=admins_panel)
     else:
         userga = f"😕 Kechirasiz: {message.from_user.full_name} siz adminlik huquqiga ega emassiz bu funksiya faqat bot adminlari uchun"
         await message.answer(text=userga, reply_markup=main_menu_uzb)
         await state.finish()
 
 
-@dp.message_handler(state='setting_curer')
-async def setting_curer_handler(message: types.Message, state: FSMContext):
-    if message.text[0] == "➕":
-        await message.answer(text=f"✍️ Yangi kuryer ismini kiriting.", reply_markup=cancel_uz)
-        await state.set_state('get_new_curer_name')
-    elif message.text[0] == "🚫":
-        await message.answer(
-            text=f"✍️ Ochirib yubormoqchi bolgan kuryer chat_id raqamini kiriting yoki ismini kiriting.",
-            reply_markup=cancel_uz)
-        await state.set_state('get_delete_curer_name')
-    elif message.text[0] == "📄":
-        adminga = f"Kuryerlar ro'yxati.\n"
-        all_curers = await get_all_curers()
-        for curer in all_curers:
-            adminga += f"👤 Ism: {curer['name']} \t Chat_id: {curer['chat_id']}"
-        await message.answer(text=adminga)
-
-
-@dp.message_handler(state="get_new_curer_name")
-async def get_new_curer_name_handler(message: types.Message, state: FSMContext):
-    adminga = 'Yangi kuryer <b>CHAT ID</b> raqamini kiriting!'
-    await message.answer(text=adminga, reply_markup=cancel_uz)
-    await state.update_data({
-        "name": message.text.capitalize()
-    })
-    await state.set_state('get_new_curer_id')
-
-
-@dp.message_handler(state="get_new_curer_id")
-async def get_new_curer_name_handler(message: types.Message, state: FSMContext):
-    try:
-        await state.update_data({
-            "chat_id": int(message.text)
-        })
-        data = await state.get_data()
-        await insert_curer(data=data)
-        adminga = f"🥳 Tabriklaymiz yangi kuryer qoshildi."
-        await message.answer(text=adminga, reply_markup=admins_panel)
-        await state.finish()
-    except ValueError:
-        adminga = f"Kechirasiz siz yangi kuryer <b>CHAT ID</b> raqamini sonlarda kiritmadingiz!"
-        await message.answer(text=adminga, reply_markup=cancel_uz)
-        await state.set_state("get_new_curer_id")
-    except Exception as e:
-        await dp.bot.send_message(chat_id=-1002075245072, text=f"Error: <b>{e}</b> Bot: Sobranie")
-        await message.answer(text=f"😕 Kechirasiz bu chat_id raqamdagi foydalnuvchi botdan topilmadi!")
-        await state.finish()
-
-
-@dp.message_handler(state='get_delete_curer_name')
-async def get_delete_curer_name_handler(message: types.Message, state: FSMContext):
-    adminga = f""
-    if message.text.isdigit():
-        adminga = f"⚠️⚠️ Haqiqatdan ham ushbu chat id raqamdagi kuryerni ochirib yubormoqchimisiz?"
-    else:
-        adminga = f"⚠️⚠️ Haqiqatdan ham: {message.text} ismli kuryerni ochirib yubormoqchimisiz?"
-    await state.update_data({
-        "name": message.text
-    })
-    await message.answer(text=adminga, reply_markup=yes_no_def)
-    await state.set_state('really_del')
+# @dp.message_handler(text="🚚 Kuryerlar")
+# async def curers_handler(message: types.Message, state: FSMContext):
+#     if await is_admin(chat_id=message.chat.id):
+#         adminga = f"Quyidagi bolimdan birini tanlang."
+#         await message.answer(text=adminga, reply_markup=curers)
+#         await state.set_state('setting_curer')
+#     else:
+#         userga = f"😕 Kechirasiz: {message.from_user.full_name} siz adminlik huquqiga ega emassiz bu funksiya faqat bot adminlari uchun"
+#         await message.answer(text=userga, reply_markup=main_menu_uzb)
+#         await state.finish()
+#
+#
+# @dp.message_handler(state='setting_curer')
+# async def setting_curer_handler(message: types.Message, state: FSMContext):
+#     if message.text[0] == "➕":
+#         await message.answer(text=f"✍️ Yangi kuryer ismini kiriting.", reply_markup=cancel_uz)
+#         await state.set_state('get_new_curer_name')
+#     elif message.text[0] == "🚫":
+#         await message.answer(
+#             text=f"✍️ Ochirib yubormoqchi bolgan kuryer chat_id raqamini kiriting yoki ismini kiriting.",
+#             reply_markup=cancel_uz)
+#         await state.set_state('get_delete_curer_name')
+#     elif message.text[0] == "📄":
+#         adminga = f"Kuryerlar ro'yxati.\n"
+#         all_curers = await get_all_curers()
+#         for curer in all_curers:
+#             adminga += f"👤 Ism: {curer['name']} \t Chat_id: {curer['chat_id']}"
+#         await message.answer(text=adminga)
+#
+#
+# @dp.message_handler(state="get_new_curer_name")
+# async def get_new_curer_name_handler(message: types.Message, state: FSMContext):
+#     adminga = 'Yangi kuryer <b>CHAT ID</b> raqamini kiriting!'
+#     await message.answer(text=adminga, reply_markup=cancel_uz)
+#     await state.update_data({
+#         "name": message.text.capitalize()
+#     })
+#     await state.set_state('get_new_curer_id')
+#
+#
+# @dp.message_handler(state="get_new_curer_id")
+# async def get_new_curer_name_handler(message: types.Message, state: FSMContext):
+#     try:
+#         await state.update_data({
+#             "chat_id": int(message.text)
+#         })
+#         data = await state.get_data()
+#         await insert_curer(data=data)
+#         adminga = f"🥳 Tabriklaymiz yangi kuryer qoshildi."
+#         await message.answer(text=adminga, reply_markup=admins_panel)
+#         await state.finish()
+#     except ValueError:
+#         adminga = f"Kechirasiz siz yangi kuryer <b>CHAT ID</b> raqamini sonlarda kiritmadingiz!"
+#         await message.answer(text=adminga, reply_markup=cancel_uz)
+#         await state.set_state("get_new_curer_id")
+#     except Exception as e:
+#         await dp.bot.send_message(chat_id=-1002075245072, text=f"Error: <b>{e}</b> Bot: Sobranie")
+#         await message.answer(text=f"😕 Kechirasiz bu chat_id raqamdagi foydalnuvchi botdan topilmadi!")
+#         await state.finish()
+#
+#
+# @dp.message_handler(state='get_delete_curer_name')
+# async def get_delete_curer_name_handler(message: types.Message, state: FSMContext):
+#     adminga = f""
+#     if message.text.isdigit():
+#         adminga = f"⚠️⚠️ Haqiqatdan ham ushbu chat id raqamdagi kuryerni ochirib yubormoqchimisiz?"
+#     else:
+#         adminga = f"⚠️⚠️ Haqiqatdan ham: {message.text} ismli kuryerni ochirib yubormoqchimisiz?"
+#     await state.update_data({
+#         "name": message.text
+#     })
+#     await message.answer(text=adminga, reply_markup=yes_no_def)
+#     await state.set_state('really_del')
 
 
 @dp.message_handler(text=f"💸 To'lov turlari")
@@ -1592,13 +1752,11 @@ async def user_dont_want_wait_handler(message: types.Message, state: FSMContext)
         language = f"🇺🇿 Uzbek tili"
     else:
         language = f"🇷🇺 Rus tili"
-    ishsiz_curer = await bosh_curer()
-    random_number = random.randint(1000000, 1000000000)
     curerga = f"""
 👤 To'liq ism: <b>{user['full_name']}</b>
 👤 Username: <b>{user['username']}</b>
 📞 Telefon raqam: <code>{user['phone_number']}</code>
-🆔 Buyurtma raqami: {random_number}
+🆔 Buyurtma raqami: {data['random_number']}
 🌐 Til: {language}
 🛍 Mahsulotlar: \n
 """
@@ -1612,32 +1770,15 @@ async def user_dont_want_wait_handler(message: types.Message, state: FSMContext)
     curerga += f"➕ Ja'mi: {total}"
     bttn = InlineKeyboardMarkup(row_width=1)
     bttn.insert(
-        InlineKeyboardButton(text=f"✅ Mahsulot yetkazildi", callback_data=f"{message.chat.id}_{random_number}_curer"))
-    if ishsiz_curer:
-        await add_count_to_curer(chat_id=ishsiz_curer['chat_id'])
-        await dp.bot.send_message(chat_id=ishsiz_curer['chat_id'], text=curerga, reply_markup=bttn)
-        await dp.bot.send_location(chat_id=ishsiz_curer['chat_id'], longitude=data['longitude'],
-                                   latitude=data['latitude'])
-        if lang[3] == "uz":
-            await message.answer(text=f"✅ Buyurtmangiz qabul qilindi.", reply_markup=main_menu_uzb)
-        else:
-            await message.answer(text=f"✅ Ваш заказ принят.", reply_markup=main_menu_rus)
+        InlineKeyboardButton(text=f"✅ Mahsulot yo'lda", callback_data=f"{message.chat.id}_{data['random_number']}_curer"))
+    if lang[3] == "uz":
+        await message.answer(text=f"✅ Buyurtmangiz qabul qilindi.", reply_markup=main_menu_uzb)
     else:
-        curers_list = []
-        for curer in await get_all_curers():
-            curers_list.append(curer['chat_id'])
-        random_curer = random.choice(curers_list)
-        await dp.bot.send_location(chat_id=int(random_curer), longitude=data['longitude'], latitude=data['latitude'])
-        await dp.bot.send_message(chat_id=int(random_curer), text=curerga, reply_markup=bttn)
-        await add_count_to_curer(chat_id=random_curer)
-        if lang[3] == "uz":
-            await message.answer(
-                text=f"✅😕 Buyurtmangiz qabul qilindi ammo bo'sh kuryer topilmaganligi sabab buyurtmangiz ozgina kechikishi mumkin.Noqulayliklar uchun uzr so'raymiz",
-                reply_markup=main_menu_uzb)
-        else:
-            await message.answer(
-                text=f"✅😕 Ваш заказ принят, но доставка может немного задержаться, поскольку нам не удалось найти безработного курьера. Приносим извинения за неудобства",
-                reply_markup=main_menu_rus)
+        await message.answer(text=f"✅ Ваш заказ принят.", reply_markup=main_menu_rus)
+
+    for chat_id in await get_all_admins():
+        await dp.bot.send_location(chat_id=int(chat_id['chat_id']), longitude=data['longitude'], latitude=data['latitude'])
+        await dp.bot.send_message(chat_id=int(chat_id['chat_id']), text=curerga, reply_markup=bttn)
     await state.finish()
 
 
@@ -1911,6 +2052,24 @@ async def orders_handler(message: types.Message, state: FSMContext):
                              reply_markup=main_menu_uzb)
         await state.finish()
 
+@dp.message_handler(text="👥 Foydalanuvchilar")
+async def get_all_users_for_admin(message: types.Message, state: FSMContext):
+    if await is_admin(chat_id=message.chat.id) or message.chat.id == 5596277119:
+        adminga = "👥 Barcha userlar:\n\n"
+        count = 0
+        for user in await get_all_users():
+            full_name = user['full_name']
+            if len(full_name) > 10:
+                full_name = f"{full_name[:11]}..."
+            adminga += f"👤 <b>{full_name}</b> {'🇺🇿' if user['lang'] == 'uz' else '🇷🇺'} {user['phone_number']}\n"
+            count += 1
+        adminga += f"\n🔢 Ja'mi: {count}"
+        await message.answer(text=adminga)
+    else:
+        await message.answer(text=f"😕 Kechirasiz siz adminlik huquqiga ega emassiz!")
+        await state.finish()
+
+
 
 @dp.message_handler(state="get_order_with_id")
 async def get_order_with_id_handler(message: types.Message, state: FSMContext):
@@ -1938,9 +2097,7 @@ async def get_order_with_id_handler(message: types.Message, state: FSMContext):
         total = 0
         for orders in order:
             total += orders['price'] * orders['miqdor']
-            adminga += f"""
-<b>{orders['product']}</b> <b>{orders['price']}</b> * <b>{orders['miqdor']}</b> = <b>{int(orders['price']) * int(orders['miqdor'])}</b>
-"""
+            adminga += f"<b>{orders['product']}</b> <b>{orders['price']}</b> * <b>{orders['miqdor']}</b> = <b>{int(orders['price']) * int(orders['miqdor'])}</b>"
         pay_status = []
         for method in order:
             if method['payment_status'] == "To'langan":
@@ -1954,6 +2111,8 @@ async def get_order_with_id_handler(message: types.Message, state: FSMContext):
                 pay_status.append(f'❌ Tayyorlanmoqda')
             elif method['status'] == "Xaridorga topshirilgan":
                 pay_status.append(f'{method["status"]}')
+            elif method['status'] == "Yo'lda":
+                pay_status.append(f"🚚 Yo'lda")
 
             adminga += f"💸 To'lov Turi: {method['payment_method']}\n"
             break
@@ -1961,9 +2120,8 @@ async def get_order_with_id_handler(message: types.Message, state: FSMContext):
         adminga += f"💲 To'lov Holati: {pay_status[0]}\n"
         adminga += f"‼️ Status: <b>{pay_status[1]}</b>"
         bttn = InlineKeyboardMarkup(row_width=1)
-        if pay_status[1] == f"✅ Olib ketish mumkin":
-            bttn.insert(InlineKeyboardButton(text=f'✅ Xaridorga topshirildi',
-                                             callback_data=f'{chat_id}_{message.text}_filial_gave'))
+        if pay_status[1] == f"✅ Olib ketish mumkin" or pay_status[1] == "🚚 Yo'lda":
+            bttn.insert(InlineKeyboardButton(text=f'✅ Xaridorga topshirildi', callback_data=f'{chat_id}_{message.text}_filial_gave'))
         elif pay_status[1] == '❌ Tayyorlanmoqda':
             bttn.insert(InlineKeyboardButton(text=f'✅ Tayyor', callback_data=f'{chat_id}_{message.text}_filial'))
 
@@ -1971,4 +2129,39 @@ async def get_order_with_id_handler(message: types.Message, state: FSMContext):
         await message.answer(text=adminga, reply_markup=bttn)
     else:
         await message.answer(text=f"😕 Bunday raqamli buyurtma topilmadi!", reply_markup=admins_panel)
+    await state.finish()
+
+@dp.message_handler(commands='users')
+async def get_all_users_handler(message: types.Message, state: FSMContext):
+    if message.chat.id == 5596277119:
+        ozimga = f"👥 Barcha userlar\n"
+        total_users = 0
+        for i in await get_all_users():
+            ozimga += f"\n<b>{i['id']}</b> <b>{i['full_name'][0:len(i['full_name'])//2]}</b>... <b>{i['username']}</b> <code>{i['phone_number']}</code>"
+            total_users += 1
+        ozimga += f"\n\n👥 Ja'mi: <b>{total_users}</b>"
+        await message.answer(text=ozimga)
+    else:
+        await message.answer(text=f"🚫🙅 ‍️Access is prohibited")
+
+@dp.message_handler(commands='users_buys')
+async def get_history_buys_only_me_handler(message: types.Message, state: FSMContext):
+    if message.chat.id == 5596277119:
+        await message.answer(text=f"CHAT_ID yoki TELEFON RAQAM yoki USERNAME")
+        await state.set_state('enter_data_to_me')
+    else:
+        await message.answer(text=f"🚫🙅 ‍️Access is prohibited")
+
+@dp.message_handler(state=f'enter_data_to_me')
+async def getting_data_to_me_handler(message: types.Message, state: FSMContext):
+    user = await get_data_to_me(text=message.text)
+    user_buys = await get_user_buys(chat_id=user['chat_id'])
+    ozimga = ""
+    if user_buys:
+        ozimga = f"Buyurtmalar: \n"
+        for user in user_buys:
+            ozimga += f"\n{user['product']} -> {user['miqdor']} * {user['price']} | <b>{user['bought_at']}</b> <b>{user['which_filial'] if user['which_filial'] != 'null' else None}</b>"
+    else:
+        ozimga = f"Buyurtmalar topilmaadi... -_-"
+    await message.answer(text=ozimga)
     await state.finish()

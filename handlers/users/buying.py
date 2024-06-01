@@ -3,7 +3,7 @@ import random
 from aiogram.dispatcher import FSMContext
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
 
-from handlers.users.location import get_location_name, get_location_name_ru
+from handlers.users.location import get_location_name, get_location_name_ru, calculate_distance
 from keyboards.default.default_keyboards import locations, locations_ru, yes_no_def, yes_no_def_ru, main_menu_uzb, \
     waiting_card_uz, waiting_card_ru, main_menu_rus, go_or_ordering, go_or_ordering_ru
 from lang import translate_uz_to_ru
@@ -12,6 +12,7 @@ from utils.db_api.database_settings import get_user, add_new_location_to_db, sel
     add_user_to_order, bosh_curer, delete_user_basket, get_all_curers, get_user_basket, \
     get_all_filials, get_lat_long, get_filial, get_filial_admin, get_all_admins, add_history_buys, add_order_curer, \
     add_count_to_curer, get_order_with_id, add_number_buys, update_quantity, update_quantity_minus
+from utils.functions import check_km
 
 
 @dp.callback_query_handler(state='in_basket')
@@ -160,10 +161,10 @@ async def select_filial_handler(message: types.Message, state: FSMContext):
                 payments_bttn.insert(KeyboardButton(text=f"💴 {payment['payment_name']}"))
 
         if lang[3] == "uz":
-            payments_bttn.insert(KeyboardButton(text=f"⬅️ Ortga"))
+            payments_bttn.insert(KeyboardButton(text=f"❌ Bekor Qilish"))
             userga = f"💸 Tolov turini tanlang."
         else:
-            payments_bttn.insert(KeyboardButton(text=f"⬅️ Назад"))
+            payments_bttn.insert(KeyboardButton(text=f"❌ Отмена"))
             userga = f"💸 Выберите тип оплаты."
         await message.answer(text=userga, reply_markup=payments_bttn)
         await state.set_state('paying')
@@ -182,35 +183,65 @@ async def get_location_handler(message: types.Message, state: FSMContext):
     lang = await get_user(chat_id=message.chat.id)
     data = await state.get_data()
     if message.text[0] == "✅":
-        await state.update_data({
-            "location_name": data['location_name'],
-            "longitude": data['longitude'],
-            "latitude": data['latitude'],
-            "chat_id": data['chat_id'],
-        })
-        await add_new_location_to_db(location_name=translate_uz_to_ru(text=data['location_name']),
-                                     latitude=data['latitude'], longitude=data["longitude"], chat_id=data['chat_id'])
-        payments_bttn = ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
-        for payment in await select_payments():
-            if payment['payment_name'] == "Naqd" or payment['payment_name'] == "Наличные":
-                payments_bttn.insert(KeyboardButton(text=f"💸 {payment['payment_name']}"))
+        km = calculate_distance(latitude=data['latitude'], longitude=data['longitude'])
+        if km == "Error":
+            if lang[3] == "uz":
+                await message.answer(text=f"😕 Kechirasiz siz filialimizdan turib bizga buyurtma bera olmaysiz!", reply_markup=locations)
             else:
-                payments_bttn.insert(KeyboardButton(text=f"💴 {payment['payment_name']}"))
-
-        if lang[3] == "uz":
-            payments_bttn.insert(KeyboardButton(text=f"❌ Bekor qilish"))
-            userga = f"💸 Tolov turini tanlang."
+                await message.answer(text=f"😕 Извините, вы не можете сделать заказ у нас, находясь в филиале!", reply_markup=locations)
         else:
-            payments_bttn.insert(KeyboardButton(text=f"❌ Отмена"))
-            userga = f"💸 Выберите тип оплаты."
-        await message.answer(text=userga, reply_markup=payments_bttn)
-        await state.set_state('paying')
+            km2 = f"{km:.2f}".split(".")
+            total = await get_user_basket(chat_id=data['chat_id'])
+            count = 0
+            for i in total:
+                count += i['narx']
+            is_true = await check_km(km=km2[0], total=count)
+            print(is_true)
+            if is_true == True:
+                await state.update_data({
+                    "location_name": data['location_name'],
+                    "longitude": data['longitude'],
+                    "latitude": data['latitude'],
+                    "chat_id": data['chat_id'],
+                })
+                await add_new_location_to_db(location_name=translate_uz_to_ru(text=data['location_name']),
+                                             latitude=data['latitude'], longitude=data["longitude"],
+                                             chat_id=data['chat_id'])
+                payments_bttn = ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
+                for payment in await select_payments():
+                    if payment['payment_name'] == "Naqd" or payment['payment_name'] == "Наличные":
+                        payments_bttn.insert(KeyboardButton(text=f"💸 {payment['payment_name']}"))
+                    else:
+                        payments_bttn.insert(KeyboardButton(text=f"💴 {payment['payment_name']}"))
+
+                if lang[3] == "uz":
+                    payments_bttn.insert(KeyboardButton(text=f"❌ Bekor qilish"))
+                    userga = f"💸 Tolov turini tanlang."
+                else:
+                    payments_bttn.insert(KeyboardButton(text=f"❌ Отмена"))
+                    userga = f"💸 Выберите тип оплаты."
+                await message.answer(text=userga, reply_markup=payments_bttn)
+                await state.set_state('paying')
+            elif is_true == None:
+                if lang[3] == "uz":
+                    await message.answer(text=f"😕 Kechirasiz sizning masofangizga bizning filialimizga juda uzoq bo'lganligi sabab sizning joylashuvingizga dostavka xizmatimiz ishlamaydi.", reply_markup=main_menu_uzb)
+                else:
+                    await message.answer(text=f"😕 К сожалению, ваше местоположение слишком далеко от нашего филиала, поэтому наша доставка не работает в вашем районе.", reply_markup=main_menu_rus)
+                await state.finish()
+            else:
+                minimum_total = is_true.split(" ")
+                if lang[3] == "uz":
+                    await message.answer(text=f"😕 Kechirasiz {lang[1]} sizning joylashuvingizga olib borishimiz uchun sizning savatingizdagi mahsulotlar summasi {minimum_total[-1]} so'm bo'lishi kerak. Savatingizga mahsulot qo'shing!", reply_markup=main_menu_uzb)
+                else:
+                    await message.answer(text=f"😕 К сожалению, {lang[1]} для доставки к вашему местоположению сумма товаров в вашей корзине должна быть не менее {minimum_total[-1]} сум. Пожалуйста, добавьте товары в корзину!", reply_markup=main_menu_rus)
+                await state.finish()
     else:
         if lang[3] == "uz":
             userga = f"‼️ Aniq manzilni yuborng."
+            await message.answer(text=userga, reply_markup=locations)
         else:
             userga = f"‼️ Пожалуйста, пришлите точный адрес."
-        await message.answer(text=userga, reply_markup=locations)
+            await message.answer(text=userga, reply_markup=locations_ru)
         await state.set_state('get_location')
 
 
@@ -251,17 +282,54 @@ async def get_loc_long_lat_handler(message: types.Message, state: FSMContext):
         'chat_id': lat_long['chat_id']
     })
     lang = await get_user(chat_id=message.chat.id)
-    payments = ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
-    for pay in await select_payments():
-        if pay['payment_name'] == "Naqd" or pay['payment_name'] == "Наличные":
-            payments.insert(KeyboardButton(text=f"💸 {pay['payment_name']}"))
+    distance = calculate_distance(longitude=lat_long['longitude'][1:-1], latitude=lat_long['latitude'][1:-1])
+    if distance != 'Error':
+        distance2 = f"{distance:.2f}".split('.')
+        count = 0
+        for i in await get_user_basket(chat_id=message.chat.id):
+            count += i['narx']
+        is_true = await check_km(km=f"{distance2[0]}", total=count)
+        if is_true == True:
+            payments = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+            for pay in await select_payments():
+                if pay['payment_name'] == "Naqd" or pay['payment_name'] == "Наличные":
+                    payments.insert(KeyboardButton(text=f"💸 {pay['payment_name']}"))
+                else:
+                    payments.insert(KeyboardButton(text=f"💴 {pay['payment_name']}"))
+            if lang[3] == "uz":
+                payments.insert(KeyboardButton(text=f"❌ Bekor Qilish"))
+                await message.answer(text=f"😊 To'lov turini tanlang.", reply_markup=payments)
+            else:
+                payments.insert(KeyboardButton(text=f'❌ Отмена'))
+                await message.answer(text=f"😊 Выберите тип оплаты.", reply_markup=payments)
+            await state.set_state('paying')
+        elif is_true == None:
+            if lang[3] == "uz":
+                await message.answer(
+                    text=f"😕 Kechirasiz sizning masofangizga bizning filialimizga juda uzoq bo'lganligi sabab sizning joylashuvingizga dostavka xizmatimiz ishlamaydi.",
+                    reply_markup=main_menu_uzb)
+            else:
+                await message.answer(
+                    text=f"😕 К сожалению, ваше местоположение слишком далеко от нашего филиала, поэтому наша доставка не работает в вашем районе.",
+                    reply_markup=main_menu_rus)
+            await state.finish()
         else:
-            payments.insert(KeyboardButton(text=f"💴 {pay['payment_name']}"))
-    if lang[3] == "uz":
-        await message.answer(text=f"😊 To'lov turini tanlang.", reply_markup=payments)
+            minimum_total = is_true.split(" ")
+            if lang[3] == "uz":
+                await message.answer(
+                    text=f"😕 Kechirasiz {lang[1]} sizning joylashuvingizga olib borishimiz uchun sizning savatingizdagi mahsulotlar summasi {minimum_total[-1]} so'm bo'lishi kerak. Savatingizga mahsulot qo'shing!",
+                    reply_markup=main_menu_uzb)
+            else:
+                await message.answer(
+                    text=f"😕 К сожалению, {lang[1]} для доставки к вашему местоположению сумма товаров в вашей корзине должна быть не менее {minimum_total[-1]} сум. Пожалуйста, добавьте товары в корзину!",
+                    reply_markup=main_menu_rus)
+            await state.finish()
     else:
-        await message.answer(text=f"😊 Выберите тип оплаты.", reply_markup=payments)
-    await state.set_state('paying')
+        if lang[3] == "uz":
+            await message.answer(text=f"😕 Kechirasiz {lang[1]}. Siz restaranimizdan turib bizga buyurtma ber-a olmaysiz!", reply_markup=locations)
+        else:
+            await message.answer(text=f"😕 К сожалению, {lang[1]}. Вы не можете сделать заказ из нашего ресторана!", reply_markup=locations_ru)
+        await state.set_state('get_location')
 
 
 @dp.message_handler(state='paying')
@@ -292,7 +360,6 @@ async def paying_handler(message: types.Message, state: FSMContext):
 🆔 Buyurtma raqami: {random_number}
 🛍 Mahsulotlar:\n
 """
-    await add_number_buys(chat_id=message.chat.id, number=random_number)
     for product in await get_user_basket(chat_id=message.chat.id):
         total += int(product['narx'])
         curerga += f"<b>{product['product']}</b> {int(product['narx']) // int(product['miqdor'])} * {product['miqdor']} = {product['narx']}\n"
@@ -311,6 +378,7 @@ async def paying_handler(message: types.Message, state: FSMContext):
                                    bought_at=message.date, status='Tayyorlanmoqda', pay=data['pay'],
                                    payment_status="To'lanmagan", go_or_order="Dostavka",
                                    which_filial="null", is_waiting=pay)
+    await add_number_buys(chat_id=message.chat.id, number=random_number)
     curerga += f"\n💸 To'lov turi: <b>{data['pay']}</b>"
     curerga += f"\n💰 Ja'mi: <b>{total}</b>"
     if data.get('location_name'):
@@ -334,7 +402,8 @@ async def paying_handler(message: types.Message, state: FSMContext):
     else:
         if message.text[0] != "💸":
             await state.update_data({
-                'pay': message.text
+                'pay': message.text,
+                'random_number': random_number
             })
             adminga = f"Yangi buyurtma qabul qilindi foydalanuvchiga karta raqam tashlaysizmi?"
             admin_bttn = InlineKeyboardMarkup(row_width=1)
@@ -351,40 +420,23 @@ async def paying_handler(message: types.Message, state: FSMContext):
                 await message.answer(text=userga, reply_markup=waiting_card_ru)
             await state.set_state('waiting_card')
         else:
-
-            ishsiz_curer = await bosh_curer()
             ordered = InlineKeyboardMarkup(row_width=1)
             ordered.insert(
                 InlineKeyboardButton(text=f"✅ Yetkazildi", callback_data=f"{message.chat.id}_{random_number}_curer"))
-            if ishsiz_curer != None:
-                await add_count_to_curer(chat_id=ishsiz_curer['chat_id'])
-                await add_order_curer(number=random_number, chat_id=ishsiz_curer['chat_id'], latitude=data['latitude'],
-                                      longitude=data['longitude'])
-                await dp.bot.send_location(longitude=data['longitude'], latitude=data['latitude'],
-                                           chat_id=ishsiz_curer['chat_id'])
-                await dp.bot.send_message(chat_id=ishsiz_curer['chat_id'], text=curerga, reply_markup=ordered)
-                if lang[3] == "uz":
-                    await message.answer(text=f"✅ Buyurtmangiz qabul qilindi.", reply_markup=main_menu_uzb)
-                else:
-                    await message.answer(text=f"✅ Ваш заказ принят.", reply_markup=main_menu_rus)
+            if lang[3] == "uz":
+                await message.answer(text=f"✅ Buyurtmangiz qabul qilindi.", reply_markup=main_menu_uzb)
             else:
-                all_curers = await get_all_curers()
-                curers = []
-                for curer in all_curers:
-                    curers.append(curer['chat_id'])
-                random_curer = random.choice(curers)
-                await add_count_to_curer(chat_id=random_curer)
-                await dp.bot.send_location(longitude=data['longitude'], latitude=data['latitude'], chat_id=random_curer)
-                await dp.bot.send_message(chat_id=random_curer, text=curerga, reply_markup=ordered)
-                await add_order_curer(number=random_number, chat_id=random_curer, latitude=f"{data['latitude']}a",
-                                      longitude=f"{data['longitude']}a")
-                if lang[3] == "uz":
-                    await message.answer(
-                        text=f"✅😕 Buyurtmangiz qabul qilindi ammo bo'sh kuryer topilmaganligi sabab buyurtmangiz ozgina kechikishi mumkin.Noqulayliklar uchun uzr so'raymiz",
-                        reply_markup=main_menu_uzb)
-                else:
-                    await message.answer(
-                        text=f"✅😕 Ваш заказ принят, но доставка может немного задержаться, поскольку нам не удалось найти безработного курьера. Приносим извинения за неудобства",
-                        reply_markup=main_menu_rus)
-            await delete_user_basket(chat_id=message.chat.id)
+                await message.answer(text=f"✅ Ваш заказ принят.", reply_markup=main_menu_rus)
+
+            for chat_id in await get_all_admins():
+                await dp.bot.send_location(longitude=data['longitude'], latitude=data['latitude'], chat_id=chat_id['chat_id'])
+                await dp.bot.send_message(chat_id=chat_id['chat_id'], text=curerga, reply_markup=ordered)
+            if lang[3] == "uz":
+                await message.answer(
+                    text=f"✅😕 Buyurtmangiz qabul qilindi ammo bo'sh kuryer topilmaganligi sabab buyurtmangiz ozgina kechikishi mumkin.Noqulayliklar uchun uzr so'raymiz",
+                    reply_markup=main_menu_uzb)
+            else:
+                await message.answer(
+                    text=f"✅😕 Ваш заказ принят, но доставка может немного задержаться, поскольку нам не удалось найти безработного курьера. Приносим извинения за неудобства",
+                    reply_markup=main_menu_rus)
             await state.finish()

@@ -115,6 +115,7 @@ history_buys = sqlalchemy.Table(
     sqlalchemy.Column("go_or_order", sqlalchemy.String),
     sqlalchemy.Column("which_filial", sqlalchemy.String, nullable=True),
     sqlalchemy.Column("chat_id", sqlalchemy.BigInteger),
+    sqlalchemy.Column("sent", sqlalchemy.Boolean, default=False)
 )
 
 filial_admins = sqlalchemy.Table(
@@ -156,4 +157,20 @@ socials = sqlalchemy.Table(
     sqlalchemy.Column('id', sqlalchemy.Integer, primary_key=True),
     sqlalchemy.Column('social_name', sqlalchemy.String),
     sqlalchemy.Column('link', sqlalchemy.String),
+)
+
+message_for_user = sqlalchemy.Table(
+    'message_for_user',
+    metadata,
+    sqlalchemy.Column('id', sqlalchemy.Integer, primary_key=True),
+    sqlalchemy.Column('message_uz', sqlalchemy.String),
+    sqlalchemy.Column('message_ru', sqlalchemy.String)
+)
+
+radius = sqlalchemy.Table(
+    'radius',
+    metadata,
+    sqlalchemy.Column('id', sqlalchemy.Integer, primary_key=True),
+    sqlalchemy.Column('radius', sqlalchemy.Integer),
+    sqlalchemy.Column('sum', sqlalchemy.Integer)
 )

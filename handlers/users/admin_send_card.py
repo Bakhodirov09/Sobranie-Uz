@@ -58,8 +58,7 @@ async def send_card_to_user(call: types.CallbackQuery, state: FSMContext):
         await call.message.answer(text=f'✅ Xabar yuborildi')
     elif call.data.endswith('_curer'):
         data = call.data.split("_")
-        await update_buy(random_number=int(data[1]), chat_id=call.message.chat.id)
-
+        await update_buy(random_number=int(data[1]))
         await call.message.answer(text=f'Ok 👌')
 
 

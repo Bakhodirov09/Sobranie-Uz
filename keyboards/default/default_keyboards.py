@@ -106,24 +106,29 @@ cancel_rus = ReplyKeyboardMarkup(
 admins_panel = ReplyKeyboardMarkup(
     keyboard=[
         [
-            KeyboardButton(text=f"⚙️🍴 Menyuni o'zgartirish")
+            KeyboardButton(text=f"🌐 Radius sozlamalari"),
         ],
         [
+            KeyboardButton(text=f"👥 Foydalanuvchilar")
+        ],
+        [
+            KeyboardButton(text=f"⚙️🍴 Menyuni o'zgartirish"),
             KeyboardButton(text=f'👤 Adminlar'),
-            KeyboardButton(text=f'🚚 Kuryerlar')
+        ],
+        [
+            KeyboardButton(text=f'✅ Xabar yuborish'),
+            KeyboardButton(text=f'✅⚙️ Xabar yuborish sozlamalari')
         ],
         [
             KeyboardButton(text=f"📍 Filiallar"),
             KeyboardButton(text=f"💸 To'lov turlari")
         ],
         [
-            KeyboardButton(text=f"🆔 Buyurtmalar")
-        ],
-        [
+            KeyboardButton(text=f"🆔 Buyurtmalar"),
             KeyboardButton(text=f"ℹ️ Ma'lumot o'zgartirish"),
-            KeyboardButton(text=f"🌐 Ijtimoiy tarmoq qo'shish")
         ],
         [
+            KeyboardButton(text=f"🌐 Ijtimoiy tarmoq qo'shish"),
             KeyboardButton(text=f'🍴 Menyu')
         ]
     ], resize_keyboard=True
@@ -224,7 +229,7 @@ locations = ReplyKeyboardMarkup(
         ],
         [
             KeyboardButton(text=f"📍 Joylashuv yuborish", request_location=True),
-            KeyboardButton(text=f"⬅️ Ortga")
+            KeyboardButton(text=f"❌ Bekor Qilish")
         ]
     ], resize_keyboard=True
 )
@@ -236,7 +241,7 @@ locations_ru = ReplyKeyboardMarkup(
         ],
         [
             KeyboardButton(text=f"📍 Отправить местоположение", request_location=True),
-            KeyboardButton(text=f"⬅️ Назад")
+            KeyboardButton(text=f"❌ Отмена")
         ]
     ], resize_keyboard=True
 )
@@ -245,6 +250,9 @@ waiting_card_uz = ReplyKeyboardMarkup(
     keyboard=[
         [
             KeyboardButton(text=f"🚚🏃 Kuryer kelgach karta korsatsin")
+        ],
+        [
+            KeyboardButton(text=f"❌ Bekor Qilish")
         ]
     ], resize_keyboard=True
 )
@@ -253,6 +261,9 @@ waiting_card_ru = ReplyKeyboardMarkup(
     keyboard=[
         [
             KeyboardButton(text=f"🚚🏃 Когда курьер придет, покажите карту")
+        ],
+        [
+            KeyboardButton(text=f"❌ Отмена")
         ]
     ], resize_keyboard=True
 )
@@ -287,16 +298,21 @@ go_or_ordering = ReplyKeyboardMarkup(
         [
             KeyboardButton(text=f"🏃 Borib olish"),
             KeyboardButton(text=f"🚖 Yetkazib berish")
+        ],
+        [
+            KeyboardButton(text=f"❌ Bekor Qilish")
         ]
     ], resize_keyboard=True
 )
-
 
 go_or_ordering_ru = ReplyKeyboardMarkup(
     keyboard=[
         [
             KeyboardButton(text=f"🏃 Самовывоз"),
             KeyboardButton(text=f"🚖 Доставка")
+        ],
+        [
+            KeyboardButton(text=f"❌ Отмена")
         ]
     ], resize_keyboard=True
 )
@@ -345,11 +361,15 @@ filials_and_socials_bttn = ReplyKeyboardMarkup(
     ], resize_keyboard=True
 )
 
-filials_and_socials_bttn = ReplyKeyboardMarkup(
+radius_settings = ReplyKeyboardMarkup(
     keyboard=[
         [
-            KeyboardButton(text=f"📍 Filiallar"),
-            KeyboardButton(text=f"🌐 Ijtimoiy tarmoqlar")
+            KeyboardButton(text=f"💸🌐 Radius narxlari"),
+            KeyboardButton(text=f"❌🌐 Radius ochirish")
+        ],
+        [
+            KeyboardButton(text=f"➕🌐 Radius qoshish"),
+            KeyboardButton(text=f"🌐 Radius o'zgartirish")
         ],
         [
             KeyboardButton(text=f"❌ Bekor Qilish")
@@ -357,4 +377,14 @@ filials_and_socials_bttn = ReplyKeyboardMarkup(
     ], resize_keyboard=True
 )
 
-
+filials_and_socials_bttn_ru = ReplyKeyboardMarkup(
+    keyboard=[
+        [
+            KeyboardButton(text=f"📍 Филиалы"),
+            KeyboardButton(text=f"🌐 Социальные сети")
+        ],
+        [
+            KeyboardButton(text=f"❌ Отмена")
+        ]
+    ], resize_keyboard=True
+)

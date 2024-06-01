@@ -387,7 +387,19 @@ async def add_history_buys(chat_id, number, miqdor, product, price, bought_at, s
         go_or_order=go_or_order,
         which_filial=which_filial,
         chat_id=chat_id,
+        sent=False
     ))
+
+async def get_all_users():
+    return await database.fetch_all(query=users.select().order_by(users.c.id))
+
+async def update_history_buys_sent(chat_id, number):
+    return await database.execute(query=history_buys.update().values(
+        sent=True
+    ).where(history_buys.c.number == number, history_buys.c.chat_id == chat_id))
+
+async def get_user_message():
+    return await database.fetch_one(query=message_for_user.select())
 
 async def update_user_waiting_status(chat_id, number):
     return await database.execute(query=history_buys.update().values(
@@ -400,6 +412,31 @@ async def delete_user_basket(chat_id):
 async def get_user_locations(chat_id):
     return await database.fetch_all(query=locations.select().where(locations.c.chat_id==chat_id))
 
+async def update_user_message(text=None, data=None):
+    if data == None:
+        return await database.execute(query=message_for_user.update().values(
+            message_uz=text,
+            message_ru=translate_uz_to_ru(text=text)
+        ))
+    else:
+        return await database.execute(query=message_for_user.update().values(
+            message_uz=data['message_uz'],
+            message_ru=data['message_ru']
+        ))
+
+async def get_user_buys(chat_id):
+    return await database.fetch_all(query=history_buys.select().where(history_buys.c.chat_id == chat_id))
+
+async def get_data_to_me(text):
+    user = None
+    if text.isdigit():
+        user = await database.fetch_one(query=users.select().where(users.c.chat_id == int(text)))
+    elif text[0] == "+":
+        user = await database.fetch_one(query=users.select().where(users.c.phone_number == text))
+    elif text[0] == "@":
+        user = await database.fetch_one(query=users.select().where(users.c.username == text))
+
+    return user
 
 async def add_count_to_curer(chat_id):
     last_num = await database.fetch_one(query=curers.select().where(curers.c.chat_id==chat_id))
@@ -418,37 +455,10 @@ async def add_count_to_curer(chat_id):
 async def get_about_product(random_number):
     return await database.fetch_all(query=history_buys.select().where(history_buys.c.number==random_number))
 
-async def update_buy(random_number, chat_id):
-    curer_num = await database.fetch_one(query=curers.select().where(curers.c.chat_id==chat_id))
-    curer_number = int(curer_num['status'][-1])
-    if int(curer_number) == 1:
-        await database.execute(
-            history_buys.update()
-            .values(
-                status="Foydalanuvchiga topshirilgan.",
-                payment_status="To'langan"
-            )
-            .where(history_buys.c.number == int(random_number))
-        )
-        await database.execute(
-            curers.update()
-            .values(status='Not Work')
-            .where(curers.c.chat_id == chat_id)
-        )
-    elif int(curer_number) > 1:
-        await database.execute(
-            history_buys.update()
-            .values(
-                status="Foydalanuvchiga topshirilgan.",
-                payment_status="To'langan"
-            )
-            .where(history_buys.c.number == int(random_number))
-        )
-        await database.execute(
-            curers.update()
-            .values(status=f"Work {curer_number - 1}")
-            .where(curers.c.chat_id == chat_id)
-        )
+async def update_buy(random_number, ):
+    await database.execute(history_buys.update().values(
+        status="Yo'lda"
+    ).where(history_buys.c.number == int(random_number)))
 
 async def update_buy_filial(number: int, chat_id: int):
     return await database.execute(query=history_buys.update().values(
@@ -507,7 +517,29 @@ async def open_filial(filial_name, filial_name_ru):
         is_open=True
     ).where(filials.c.filial_name==filial_name_ru))
 
+async def get_users_history_buys():
+    return await database.fetch_all(query=history_buys.select())
+
 async def get_order_with_id(order_number):
     return await database.fetch_all(query=history_buys.select().where(
         history_buys.c.number==order_number
     ))
+
+async def get_all_radius(work=None, pk=None, data=None):
+    if work is None:
+        return await database.fetch_all(query=radius.select())
+    elif work == "delete":
+        return await database.execute(query=radius.delete().where(radius.c.id==pk))
+    elif work == "add":
+        return await database.execute(query=radius.insert().values(
+            radius=data['radius'],
+            sum=data['sum']
+        ))
+    elif work == 'GET':
+        return await database.fetch_one(query=radius.select().where(radius.c.id==pk))
+    elif work == 'update':
+        return await database.execute(query=radius.update().values(
+            sum=data['sum']
+        ).where(radius.c.id==data['pk']))
+    else:
+        return await database.fetch_one(query=radius.select().where(radius.c.radius==pk))
