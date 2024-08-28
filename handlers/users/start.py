@@ -1006,7 +1006,6 @@ async def delete_menu_handler(message: types.Message, state: FSMContext):
 async def delete_menu_handler(call: types.CallbackQuery, state: FSMContext):
     await state.update_data({
         "menu": call.data,
-        'rus_menu_name': translate_uz_to_ru(text=call.data)
     })
     adminga = f"{call.data} menyuni va menyudagi taomlarni haqiqatdan ochirib yubormoqchimisiz?"
     await call.message.answer(text=adminga, reply_markup=yes_no)
@@ -1019,7 +1018,7 @@ async def really_del_menu_handler(call: types.CallbackQuery, state: FSMContext):
     adminga = f""
     if call.data == "yes":
         data = await state.get_data()
-        await delete_menu(menu_name=data['menu'], rus_menu_name=data['rus_menu_name'])
+        await delete_menu(menu_name=data['menu'])
         adminga = f"✅ Menyu bolimidan: {data['menu']} ochirildi."
     else:
         adminga = f"✅ Bekor qilindi."

@@ -166,8 +166,20 @@ async def update_menu_name_ru_(data: dict):
         menu_name=data['new_name_ru']
     ).where(fast_food_menu.c.menu==data['menu_ru']))
 
-async def delete_menu(menu_name, rus_menu_name):
-    return await database.execute(query=menu.delete().where(menu.c.menu_name==menu_name)), database.execute(query=fast_food_menu.delete().where(fast_food_menu.c.menu==menu_name)), database.execute(query=menu.delete().where(menu.c.menu_name==rus_menu_name)), database.execute(query=fast_food_menu.delete().where(fast_food_menu.c.menu==rus_menu_name))
+async def delete_menu(menu_name):
+    menuu = await get_menu_pic(menu_name)
+    ru_menu = await database.fetch_one(query=menu.select().where(
+        menu.c.menu_picture == menuu['menu_picture'],
+        menu.c.lang == 'ru'
+    ))
+    await database.execute(query=menu.delete().where(menu.c.menu_picture == menuu['menu_picture']))
+    await database.execute(query=fast_food_menu.delete().where(
+        fast_food_menu.c.menu == ru_menu['menu_name']
+    ))
+    await database.execute(query=fast_food_menu.delete().where(
+        fast_food_menu.c.menu == menu_name
+    ))
+    return True
 
 async def update_meal_price(new_price, menu_name, rus_menu_name, food_name):
     return await database.execute(query=fast_food_menu.update().values(
