@@ -85,7 +85,7 @@ async def get_menu_pic(menu_name):
 async def add_meal_to_menu(data: dict):
     return await database.execute(query=fast_food_menu.insert().values(
         menu=f"{data['menu']}",
-        food_name=f"{data['name']}",
+        food_name=f"{data['name_uz']}",
         price=data['price'],
         photo=data['photo'],
         description=data['desc_uz']
@@ -111,8 +111,13 @@ async def delete_filial_admin(data: dict):
 
 
 async def add_meal_to_menu_ru(data: dict):
+    menu_uz = await get_menu_pic(menu_name=data['menu'])
+    menu_ru = await database.fetch_one(query=menu.select().where(
+        menu.c.menu_picture == menu_uz['menu_picture'],
+        menu.c.lang == 'ru'
+    ))
     return await database.execute(query=fast_food_menu.insert().values(
-        menu=f"{data['menu_ru']}",
+        menu=menu_ru['menu_name'],
         food_name=f"{data['name_ru']}",
         price=data['price'],
         photo=data['photo'],

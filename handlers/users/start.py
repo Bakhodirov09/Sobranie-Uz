@@ -111,7 +111,7 @@ async def open_menu_handler(message: types.Message, state: FSMContext):
     photo = await get_main_menu_logo()
     lang = await get_user(chat_id=message.chat.id)
     menyu = InlineKeyboardMarkup(row_width=2)
-    if lang[3] == "uz":
+    if lang['lang'] == "uz":
         userga = f"😋 Bizning Menyu"
         menus = await get_menu()
         for meal in menus:
@@ -751,7 +751,7 @@ async def add_meal_to_menu_handler(message: types.Message, state: FSMContext):
         menu_bttn = InlineKeyboardMarkup(row_width=2)
         for meal in menuu:
             menu_bttn.insert(InlineKeyboardButton(text=f'{meal["menu_name"]}', callback_data=f'{meal["menu_name"]}'))
-        menu_bttn.insert(InlineKeyboardButton(text=f'🏘 Asosiy menyu"', callback_data='main_menu'))
+        menu_bttn.insert(InlineKeyboardButton(text=f'🏘 Asosiy menyu', callback_data='main_menu'))
         await message.answer(text=adminga, reply_markup=cancel_uz)
         await message.answer_photo(photo=pic['photo'], reply_markup=menu_bttn)
         await state.set_state('select_menu')
@@ -765,7 +765,6 @@ async def selecting_menu(call: types.CallbackQuery, state: FSMContext):
     await call.message.delete()
     await state.update_data({
         "menu": call.data,
-        "menu_ru": translate_uz_to_ru(text=call.data)
     })
     adminga = f"🖼 Yangi taomingizni rasmini yuboring"
     await call.message.answer(text=adminga, reply_markup=cancel_uz)
@@ -777,21 +776,27 @@ async def new_meal_picture_handler(message: types.Message, state: FSMContext):
     await state.update_data({
         "photo": message.photo[-1].file_id
     })
-    adminga = f'✍️ Yangi taomni nomini yuboring.'
+    adminga = f'✍️ Yangi taomni nomini uzbek tilida yuboring.'
     await message.answer(text=adminga, reply_markup=cancel_uz)
-    await state.set_state('enter_new_meal_name')
+    await state.set_state('enter_new_meal_name_uz')
 
 
-@dp.message_handler(state='enter_new_meal_name', content_types=types.ContentType.TEXT)
+@dp.message_handler(state='enter_new_meal_name_uz', content_types=types.ContentType.TEXT)
 async def new_meal_name_handler(message: types.Message, state: FSMContext):
     await state.update_data({
-        "name": message.text,
-        "name_ru": translate_uz_to_ru(text=message.text)
+        "name_uz": message.text,
     })
-    adminga = f'💰 Yangi taomni narxini kiriting.\n‼️ Faqat Sonlarda'
+    adminga = f'✍️ Yangi taom nomini rus tilida kiritng.'
     await message.answer(text=adminga, reply_markup=cancel_uz)
-    await state.set_state('new_meal_price')
+    await state.set_state('enter_new_meal_name_ru')
 
+@dp.message_handler(state='enter_new_meal_name_ru')
+async def enter_new_meal_name_ru_handler(message: types.Message, state: FSMContext):
+    await state.update_data({
+        'name_ru': message.text
+    })
+    await message.answer(text=f"💰 Yangi taom narxini yuboring.\n‼️Faqat butun sonlarda.")
+    await state.set_state('new_meal_price')
 
 @dp.message_handler(state='new_meal_price')
 async def new_meal_price_handler(message: types.Message, state: FSMContext):
@@ -800,9 +805,9 @@ async def new_meal_price_handler(message: types.Message, state: FSMContext):
             "price": int(message.text)
         })
 
-        adminga = f"✍️ Yangi taom haqida ma'lumot bering."
+        adminga = f"✍️ Yangi taom haqida uzbek tilida ma'lumot bering"
         await message.answer(text=adminga, reply_markup=cancel_uz)
-        await state.set_state('description_new_meal')
+        await state.set_state('description_new_meal_uz')
     except ValueError:
         adminga = f"Kechirasiz yangi taomingiz narxini faqat raqamlarda kiriting!\nMasalan: <b>23000</b>"
         await message.answer(text=adminga, reply_markup=cancel_uz)
@@ -814,15 +819,32 @@ async def new_meal_price_handler(message: types.Message, state: FSMContext):
         await state.finish()
 
 
-@dp.message_handler(state='description_new_meal')
+@dp.message_handler(state='description_new_meal_uz')
 async def get_new_meal_desc(message: types.Message, state: FSMContext):
-    adminga = f''
     await state.update_data({
         "desc_uz": message.text,
-        "desc_ru": translate_uz_to_ru(text=message.text)
+    })
+    await message.answer(text=f"✍️ Yangi taom haqida rus tilida ma'lumot bering")
+    await state.set_state('description_new_meal_ru')
+    # try:
+    #     data = await state.get_data()
+    #     await add_meal_to_menu(data=data)
+    #     await add_meal_to_menu_ru(data=data)
+    #     adminga = f'✅ Yangi taom: <b>{data["menu"]}</b> menyusiga qoshildi!'
+    # except Exception as e:
+    #     adminga = f"😔 Kechirasiz botda xatolik mavjud iltimos qayta urinib koring."
+    #     await dp.bot.send_message(chat_id=-1002075245072, text=f'Error: <b>{e}</b> Bot: Sobranie')
+    # await message.answer(text=adminga, reply_markup=admins_panel)
+    # await state.finish()
+
+@dp.message_handler(state='description_new_meal_ru')
+async def get_new_meal_desc(message: types.Message, state: FSMContext):
+    await state.update_data({
+        'desc_ru': message.text
     })
     try:
         data = await state.get_data()
+        print(data)
         await add_meal_to_menu(data=data)
         await add_meal_to_menu_ru(data=data)
         adminga = f'✅ Yangi taom: <b>{data["menu"]}</b> menyusiga qoshildi!'
@@ -831,7 +853,6 @@ async def get_new_meal_desc(message: types.Message, state: FSMContext):
         await dp.bot.send_message(chat_id=-1002075245072, text=f'Error: <b>{e}</b> Bot: Sobranie')
     await message.answer(text=adminga, reply_markup=admins_panel)
     await state.finish()
-
 
 @dp.message_handler(state='setting', text='🚫🍴 Taom olib tashlash')
 async def delete_meal_in_menu_handler(message: types.Message, state: FSMContext):
@@ -891,21 +912,27 @@ async def are_you_sure_handler(call: types.CallbackQuery, state: FSMContext):
 
 @dp.message_handler(state='setting', text="🍴➕ Yangi menyu qoshish")
 async def add_new_menu_handler(message: types.Message, state: FSMContext):
-    adminga = f"✍️ Yangi menyu nomini kiriting."
+    adminga = f"✍️ Yangi menyu nomini uzbek tilida kiriting."
     await message.answer(text=adminga, reply_markup=cancel_uz)
-    await state.set_state('enter_new_menu_name')
+    await state.set_state('enter_new_menu_name_uz')
 
 
-@dp.message_handler(state='enter_new_menu_name')
+@dp.message_handler(state='enter_new_menu_name_uz')
 async def entering_new_menu_name_handler(message: types.Message, state: FSMContext):
     await state.update_data({
         "new_menu_name": message.text,
-        "new_menu_name_ru": translate_uz_to_ru(text=message.text)
+    })
+    await message.answer(text=f"Yangi menyu nomini rus tilida kiritng.")
+    await state.set_state('enter_new_menu_name_ru')
+
+@dp.message_handler(state='enter_new_menu_name_ru')
+async def enter_new_meal_name_ru_handler(message: types.Message, state: FSMContext):
+    await state.update_data({
+        'new_menu_name_ru': message.text
     })
     adminga = f'🖼 Yangi menyuni rasmini yuboring.'
     await message.answer(text=adminga, reply_markup=cancel_uz)
     await state.set_state('send_menu_pic')
-
 
 @dp.message_handler(state='send_menu_pic', content_types=types.ContentType.PHOTO)
 async def new_menu_pic_handler(message: types.Message, state: FSMContext):
