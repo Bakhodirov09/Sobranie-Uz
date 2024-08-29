@@ -128,7 +128,7 @@ async def get_lat_long(chat_id, location_name):
     return await database.fetch_one(query=locations.select().where(locations.c.location_name==location_name, locations.c.chat_id==chat_id))
 
 async def delete_meal(data: dict):
-    food = await get_fast_food_in_menu(menu_name=data['menu'], fast_food_name=data['name'])
+    food = await get_fast_food_in_menu(menu_name=data['menu'], fast_food_name=data['meal'])
     await database.execute(query=fast_food_menu.delete().where(
         fast_food_menu.c.photo == food['photo']
     ))
