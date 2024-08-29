@@ -881,7 +881,7 @@ async def select_menu_dl_handler(call: types.CallbackQuery, state: FSMContext):
     foods_menu = InlineKeyboardMarkup(row_width=2)
     menu_foods = await get_fast_foods_in_menu(menu_name=call.data)
     for meal in menu_foods:
-        foods_menu.insert(InlineKeyboardButton(text=f"{meal['food_name']}", callback_data=f"{meal['fast_food_name']}"))
+        foods_menu.insert(InlineKeyboardButton(text=f"{meal['food_name']}", callback_data=f"{meal['food_name']}"))
     foods_menu.insert(InlineKeyboardButton(text=f"🏘 Asosiy menyu", callback_data='main_menu'))
     await state.set_state('deleting')
 
