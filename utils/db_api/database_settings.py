@@ -202,7 +202,7 @@ async def update_meal_name(data: dict):
     ).where(fast_food_menu.c.food_name == data['name_uz']))
     await database.execute(query=fast_food_menu.update().values(
         food_name=data['name_ru']
-    ).where(fast_food_menu.c.photo == food['photo'], fast_food_menu.c.lang == 'ru'))
+    ).where(fast_food_menu.c.photo == food['photo'], fast_food_menu.c.id == int(food['id']+1)))
 
 async def add_admin_to_db(data: dict):
     return await database.execute(query=admins.insert().values(
