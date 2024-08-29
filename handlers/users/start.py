@@ -890,7 +890,7 @@ async def deleting_meal_handler(call: types.CallbackQuery, state: FSMContext):
 @dp.callback_query_handler(state='sure')
 async def are_you_sure_handler(call: types.CallbackQuery, state: FSMContext):
     adminga = ""
-    if await call.data == "yes":
+    if call.data == "yes":
         data = await state.get_data()
         await delete_meal(data=data)
         adminga = f'✅ {data["meal"]} Menyudan olip tashlandi!'
