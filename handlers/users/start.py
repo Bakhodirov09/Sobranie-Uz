@@ -882,7 +882,7 @@ async def deleting_meal_handler(call: types.CallbackQuery, state: FSMContext):
     adminga = f"{call.data} taomini haqiqatdan ham ochirib yubormoqchimisiz?"
     await call.message.answer(text=adminga, reply_markup=yes_no)
     await state.update_data({
-        "meal": await call.data
+        "meal": call.data
     })
     await state.set_state('sure')
 
