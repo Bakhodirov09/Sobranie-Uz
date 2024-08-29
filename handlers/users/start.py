@@ -1186,7 +1186,6 @@ async def select_menu_handler(call: types.CallbackQuery, state: FSMContext):
     await call.message.delete()
     await state.update_data({
         "menu": call.data,
-        "menu_ru": translate_uz_to_ru(text=call.data)
     })
     adminga = f"‼️ {call.data} menyudagi qaysi taom nomini o'zgartirmoqchisiz?"
     meals = InlineKeyboardMarkup(row_width=2)
@@ -1200,15 +1199,12 @@ async def select_menu_handler(call: types.CallbackQuery, state: FSMContext):
 @dp.callback_query_handler(state='select_meal_to_name')
 async def selecting_meal_handler(call: types.CallbackQuery, state: FSMContext):
     await call.message.delete()
-    data = await state.get_data()
     await state.update_data({
-        "menu": data['menu'],
-        "menu_ru": data['menu_ru'],
         'food_name': call.data
     })
-    adminga = f"✍️ Ushbu taomni yangi nomini yuboring"
+    adminga = f"✍️ Ushbu taomni yangi nomini uzbek tilida yuboring"
     await call.message.answer(text=adminga, reply_markup=cancel_uz)
-    await state.set_state('new_name_meal')
+    await state.set_state('new_name_meal_uz')
 
 @dp.message_handler(text="🌐 Ijtimoiy tarmoq qo'shish")
 async def add_social_handler(message: types.Message, state: FSMContext):
@@ -1237,21 +1233,24 @@ async def new_social_link_handler(message: types.Message, state: FSMContext):
     await message.answer(text=f"✅ Sahifa qo'shildi", reply_markup=admins_panel)
     await state.finish()
 
-@dp.message_handler(state='new_name_meal', content_types=types.ContentType.TEXT)
+@dp.message_handler(state='new_name_meal_uz', content_types=types.ContentType.TEXT)
 async def updating_meal_price_handler(message: types.Message, state: FSMContext):
-    try:
-        data = await state.get_data()
-        await update_meal_name(new_name=message.text, menu_name=data['menu'], rus_menu_name=data['menu_ru'],
-                               food_name=data['food_name'])
-        adminga = f"✅ <b>{data['food_name']}</b> mahsulotining nomi o'zgartirildi."
-        await message.answer(text=adminga, reply_markup=admins_panel)
-        await state.finish()
+    await state.update_data({
+        'name_uz': message.text
+    })
+    await message.answer(text=f"Ushbu taomning ruscha nomini kiriting.")
+    await state.set_state('new_name_meal_ru')
 
-    except Exception as e:
-        await dp.bot.send_message(chat_id=-1002075245072, text=f"Error: <b>{e}</b> Bot: <b>Sobranie</b>")
-        adminga = f"😕 Kechirasiz botda xatolik mavjud iltimos qayta urinib koring."
-        await message.answer(text=adminga, reply_markup=admins_panel)
-        await state.finish()
+@dp.message_handler(state='new_name_meal_ru')
+async def new_name_meal_ru_handler(message: types.Message, state: FSMContext):
+    await state.update_data({
+        'name_ru': message.text
+    })
+    data = await state.get_data()
+    await update_meal_name(data=data)
+    adminga = f"✅ <b>{data['food_name']}</b> mahsulotining nomi o'zgartirildi."
+    await message.answer(text=adminga, reply_markup=admins_panel)
+    await state.finish()
 
 @dp.message_handler(text=f"ℹ️ Ma'lumot o'zgartirish")
 async def change_about_handler(message: types.Message, state: FSMContext):

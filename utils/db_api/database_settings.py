@@ -195,12 +195,14 @@ async def update_meal_photo(new_photo, menu_name, rus_menu_name, food_name):
         photo=new_photo
     ).where(fast_food_menu.c.menu==rus_menu_name))
 
-async def update_meal_name(new_name, menu_name, rus_menu_name, food_name):
-    return await database.execute(query=fast_food_menu.update().values(
-        food_name=new_name
-    ).where(fast_food_menu.c.menu==menu_name, fast_food_menu.c.food_name==food_name)), await database.execute(query=fast_food_menu.update().values(
-        food_name=new_name
-    ).where(fast_food_menu.c.menu==rus_menu_name))
+async def update_meal_name(data: dict):
+    food = await get_fast_food_in_menu(fast_food_name=data['name'], menu_name=data['menu'])
+    await database.execute(query=fast_food_menu.update().values(
+        food_name=data['name_uz']
+    ).where(fast_food_menu.c.food_name == data['name']))
+    await database.execute(query=fast_food_menu.update().values(
+        food_name=data['name_ru']
+    ).where(fast_food_menu.c.photo == food['photo'], fast_food_menu.c.lang == 'ru'))
 
 async def add_admin_to_db(data: dict):
     return await database.execute(query=admins.insert().values(
