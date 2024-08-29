@@ -883,6 +883,7 @@ async def select_menu_dl_handler(call: types.CallbackQuery, state: FSMContext):
     for meal in menu_foods:
         foods_menu.insert(InlineKeyboardButton(text=f"{meal['food_name']}", callback_data=f"{meal['food_name']}"))
     foods_menu.insert(InlineKeyboardButton(text=f"🏘 Asosiy menyu", callback_data='main_menu'))
+    await call.message.answer(text=f"{call.data} menyudagi qaysi taomni?", reply_markup=foods_menu)
     await state.set_state('deleting')
 
 
