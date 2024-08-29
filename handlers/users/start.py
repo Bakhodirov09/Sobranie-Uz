@@ -826,16 +826,6 @@ async def get_new_meal_desc(message: types.Message, state: FSMContext):
     })
     await message.answer(text=f"✍️ Yangi taom haqida rus tilida ma'lumot bering")
     await state.set_state('description_new_meal_ru')
-    # try:
-    #     data = await state.get_data()
-    #     await add_meal_to_menu(data=data)
-    #     await add_meal_to_menu_ru(data=data)
-    #     adminga = f'✅ Yangi taom: <b>{data["menu"]}</b> menyusiga qoshildi!'
-    # except Exception as e:
-    #     adminga = f"😔 Kechirasiz botda xatolik mavjud iltimos qayta urinib koring."
-    #     await dp.bot.send_message(chat_id=-1002075245072, text=f'Error: <b>{e}</b> Bot: Sobranie')
-    # await message.answer(text=adminga, reply_markup=admins_panel)
-    # await state.finish()
 
 @dp.message_handler(state='description_new_meal_ru')
 async def get_new_meal_desc(message: types.Message, state: FSMContext):
@@ -889,7 +879,7 @@ async def select_menu_dl_handler(call: types.CallbackQuery, state: FSMContext):
 
 @dp.callback_query_handler(state='deleting')
 async def deleting_meal_handler(call: types.CallbackQuery, state: FSMContext):
-    adminga = f"{await call.data} taomini haqiqatdan ham ochirib yubormoqchimisiz?"
+    adminga = f"{call.data} taomini haqiqatdan ham ochirib yubormoqchimisiz?"
     await call.message.answer(text=adminga, reply_markup=yes_no)
     await state.update_data({
         "meal": await call.data
