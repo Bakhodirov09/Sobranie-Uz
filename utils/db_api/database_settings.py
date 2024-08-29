@@ -196,7 +196,7 @@ async def update_meal_photo(new_photo, menu_name, rus_menu_name, food_name):
     ).where(fast_food_menu.c.menu==rus_menu_name))
 
 async def update_meal_name(data: dict):
-    food = await get_fast_food_in_menu(fast_food_name=data['name'], menu_name=data['menu'])
+    food = await get_fast_food_in_menu(fast_food_name=data['nameuz'], menu_name=data['menu'])
     await database.execute(query=fast_food_menu.update().values(
         food_name=data['name_uz']
     ).where(fast_food_menu.c.food_name == data['name']))
