@@ -105,7 +105,7 @@ async def go_or_ordering_handler(message: types.Message, state: FSMContext):
         for filial in await get_all_filials(lang=lang[3]):
             filials_bttn.insert(KeyboardButton(text=f"{filial['filial_name']}"))
         if lang[3] == "uz":
-            filials_bttn.insert(KeyboardButton(text="❌ Bekor qilish"))
+            filials_bttn.insert(KeyboardButton(text="❌ Bekor Qilish"))
         else:
             filials_bttn.insert(KeyboardButton(text="❌ Отмена"))
 
@@ -215,7 +215,7 @@ async def get_location_handler(message: types.Message, state: FSMContext):
                         payments_bttn.insert(KeyboardButton(text=f"💴 {payment['payment_name']}"))
 
                 if lang[3] == "uz":
-                    payments_bttn.insert(KeyboardButton(text=f"❌ Bekor qilish"))
+                    payments_bttn.insert(KeyboardButton(text=f"❌ Bekor Qilish"))
                     userga = f"💸 Tolov turini tanlang."
                 else:
                     payments_bttn.insert(KeyboardButton(text=f"❌ Отмена"))
@@ -254,7 +254,7 @@ async def get_location_handler(message: types.Message, state: FSMContext):
         for locat in await get_user_locations(chat_id=message.chat.id):
             locatinos_bttn.insert(KeyboardButton(text=locat['location_name']))
         if lang[3] == "uz":
-            locatinos_bttn.insert(KeyboardButton(text=f"❌ Bekor qilish"))
+            locatinos_bttn.insert(KeyboardButton(text=f"❌ Bekor Qilish"))
             userga = f"😊 O'zingizga qulay manzilni tanlang."
             await message.answer(text=userga, reply_markup=locatinos_bttn)
         else:
