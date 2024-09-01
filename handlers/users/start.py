@@ -102,7 +102,6 @@ async def send_phone_number_handler(message: types.Message, state: FSMContext):
 
 
 # Uzbek Functions
-
 @dp.message_handler(text="🍴 Menyu")
 async def open_menu_handler(message: types.Message, state: FSMContext):
     photo = await get_main_menu_logo()
@@ -112,7 +111,7 @@ async def open_menu_handler(message: types.Message, state: FSMContext):
         userga = f"😋 Bizning Menyu"
         menus = await get_menu()
         menyu.insert(InlineKeyboardButton(text='🏘 Asosiy Menu', callback_data='main_menu'))
-        menyu.insert(InlineKeyboardButton(text='📥 Savat', callback_data='basket_uz'))
+        menyu.insert(InlineKeyboardButton(text='📥 Savat', callback_data='basket'))
         for meal in menus:
             menyu.insert(InlineKeyboardButton(text=f"{meal['menu_name']}", callback_data=f"{meal['menu_name']}_uz"))
         await message.answer(text=userga, reply_markup=main_menu_back_uz)
@@ -120,7 +119,7 @@ async def open_menu_handler(message: types.Message, state: FSMContext):
         userga = f"😋 Наше меню"
         menus = await get_menu_ru()
         menyu.insert(InlineKeyboardButton(text='🏘 Главное меню', callback_data='main_menu'))
-        menyu.insert(InlineKeyboardButton(text='📥 Корзина', callback_data='basket_ru'))
+        menyu.insert(InlineKeyboardButton(text='📥 Корзина', callback_data='basket'))
         for meal in menus:
             menyu.insert(InlineKeyboardButton(text=f"{meal['menu_name']}", callback_data=f"{meal['menu_name']}_ru"))
         await message.answer(text=userga, reply_markup=main_menu_back_ru)
@@ -216,16 +215,18 @@ async def menu_handler(call: types.CallbackQuery, state: FSMContext):
             caption = ""
             if call.data.endswith('_uz'):
                 menuu = await get_menu()
+                menu_bttn.insert(InlineKeyboardButton(text=f"📥 Savat", callback_data='basket'))
+                menu_bttn.insert(InlineKeyboardButton(text=f"🏘 Asosiy menyu", callback_data='main_menu'))
                 for item in menuu:
                     menu_bttn.insert(InlineKeyboardButton(text=f"{item['menu_name']}", callback_data=f"{item['menu_name']}_uz"))
                 caption = '😋 Bizning menyu'
-                menu_bttn.insert(InlineKeyboardButton(text=f"🏘 Asosiy menyu", callback_data='main_menu'))
             else:
                 menuu = await get_menu_ru()
+                menu_bttn.insert(InlineKeyboardButton(text=f"📥 Корзина", callback_data='basket'))
+                menu_bttn.insert(InlineKeyboardButton(text=f"🏘 Главное меню", callback_data='main_menu'))
                 for item in menuu:
                     menu_bttn.insert(InlineKeyboardButton(text=f"{item['menu_name']}", callback_data=f"{item['menu_name']}_ru"))
                 caption = '😋 Наше меню'
-                menu_bttn.insert(InlineKeyboardButton(text=f"🏘 Главное меню", callback_data='main_menu'))
             await call.message.answer_photo(photo=logo['photo'], caption=caption, reply_markup=menu_bttn)
             await state.set_state('menu')
 
@@ -392,7 +393,7 @@ async def get_user_basket_handler(message: types.Message, state: FSMContext):
             basket_bttn.insert(InlineKeyboardButton(text=f"{counter}", callback_data='product'))
             basket_bttn.insert(InlineKeyboardButton(text=f'➕', callback_data=f'update_quantity_{basket["id"]}_plus_uz'))
             user_basket_bttn.insert(KeyboardButton(text=f"❌ {basket['product']}"))
-        userga += f"\n\n💰 Общий: <b>{total}</b>"
+        userga += f"\n💰 Общий: <b>{total}</b>"
         await message.answer(text=answer, reply_markup=user_basket_bttn)
         await message.answer(text=userga, reply_markup=basket_bttn)
     else:
