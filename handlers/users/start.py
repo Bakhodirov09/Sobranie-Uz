@@ -1821,6 +1821,7 @@ async def dl_from_basket_handler(message: types.Message, state: FSMContext):
         else:
             userga = "😊 Главное меню"
             await message.answer(text=userga, reply_markup=main_menu_rus)
+        await state.finish()
 
 
 @dp.message_handler(state="setting", text="🖼 Asosiy menyu rasmini o'zgartirish")
