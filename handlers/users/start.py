@@ -1,12 +1,9 @@
 import random
 from datetime import timedelta
-
 from aiogram import types
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.builtin import CommandStart
 from aiogram.types import ReplyKeyboardRemove
-
-from lang import translate_uz_to_ru
 from utils.db_api.database_settings import *
 from keyboards.default.default_keyboards import *
 from keyboards.inline.inline_keyboards import *
@@ -114,16 +111,18 @@ async def open_menu_handler(message: types.Message, state: FSMContext):
     if lang['lang'] == "uz":
         userga = f"😋 Bizning Menyu"
         menus = await get_menu()
+        menyu.insert(InlineKeyboardButton(text='🏘 Asosiy Menu', callback_data='main_menu'))
+        menyu.insert(InlineKeyboardButton(text='📥 Savat', callback_data='basket_uz'))
         for meal in menus:
             menyu.insert(InlineKeyboardButton(text=f"{meal['menu_name']}", callback_data=f"{meal['menu_name']}_uz"))
-        menyu.insert(InlineKeyboardButton(text='🏘 Asosiy Menu', callback_data='main_menu'))
         await message.answer(text=userga, reply_markup=main_menu_back_uz)
     else:
         userga = f"😋 Наше меню"
         menus = await get_menu_ru()
+        menyu.insert(InlineKeyboardButton(text='🏘 Главное меню', callback_data='main_menu'))
+        menyu.insert(InlineKeyboardButton(text='📥 Корзина', callback_data='basket_ru'))
         for meal in menus:
             menyu.insert(InlineKeyboardButton(text=f"{meal['menu_name']}", callback_data=f"{meal['menu_name']}_ru"))
-        menyu.insert(InlineKeyboardButton(text='🏘 Главное меню', callback_data='main_menu'))
         await message.answer(text=userga, reply_markup=main_menu_back_ru)
     await message.answer_photo(photo=photo['photo'], reply_markup=menyu)
     await state.set_state('menu')
@@ -157,10 +156,10 @@ async def menu_handler(call: types.CallbackQuery, state: FSMContext):
             menu_pic = await get_menu_pic(menu_name=call.data[0:-3])
             meals = InlineKeyboardMarkup(row_width=2)
             userga = f'😋 {call.data[0:-3]} Menyu'
-            for meal in await get_fast_foods_in_menu(menu_name=call.data[0:-3]):
-                meals.insert(InlineKeyboardButton(text=f'{meal["food_name"]}', callback_data=f'{meal["food_name"]}'))
             meals.insert(InlineKeyboardButton(text=f'⬅️ Ortga', callback_data=f'back_to_menu_uz'))
             meals.insert(InlineKeyboardButton(text=f"🏘 Asosiy menyu", callback_data='main_menu'))
+            for meal in await get_fast_foods_in_menu(menu_name=call.data[0:-3]):
+                meals.insert(InlineKeyboardButton(text=f'{meal["food_name"]}', callback_data=f'{meal["food_name"]}'))
             await call.message.answer_photo(photo=menu_pic['menu_picture'], caption=userga, reply_markup=meals)
             await state.set_state('menu')
         else:
@@ -171,10 +170,10 @@ async def menu_handler(call: types.CallbackQuery, state: FSMContext):
             menu_pic = await get_menu_pic(menu_name=call.data[0:-3])
             meals = InlineKeyboardMarkup(row_width=2)
             userga = f'😋 {call.data[0:-3]} Меню'
-            for meal in await get_fast_foods_in_menu(menu_name=call.data[0:-3]):
-                meals.insert(InlineKeyboardButton(text=f'{meal["food_name"]}', callback_data=f'{meal["food_name"]}'))
             meals.insert(InlineKeyboardButton(text=f'⬅️ Назад', callback_data=f'back_to_menu_ru'))
             meals.insert(InlineKeyboardButton(text=f'🏘 Главное меню', callback_data='main_menu'))
+            for meal in await get_fast_foods_in_menu(menu_name=call.data[0:-3]):
+                meals.insert(InlineKeyboardButton(text=f'{meal["food_name"]}', callback_data=f'{meal["food_name"]}'))
             await call.message.answer_photo(photo=menu_pic['menu_picture'], caption=userga, reply_markup=meals)
             await state.set_state('menu')
     elif await get_fast_food_in_menu(menu_name=data['menu_name'], fast_food_name=call.data):
@@ -191,14 +190,20 @@ async def menu_handler(call: types.CallbackQuery, state: FSMContext):
         if lang[3] == "uz":
             userga = f"""
 😋 {food_name}:
-Mahsulot Haqida: <b>{fast_food['description']}</b>
+‼️ Mahsulot Haqida: 
+
+<b>{fast_food['description']}</b>
+
 💰 Narxi: {price}
 """
             await call.message.answer_photo(photo=photo, caption=userga, reply_markup=await plus_minus_def(0, 0, back_bttn=fast_food['menu']))
         else:
             userga = f"""
 😋 {food_name}:\t
-О продукте: <b>{fast_food['description']}</b>
+‼️ О продукте: 
+
+<b>{fast_food['description']}</b>
+
 💰 Цена: {price}
 """
             await call.message.answer_photo(photo=photo, caption=userga, reply_markup=await plus_minus_def_ru(0, 0, back_bttn=fast_food['menu']))
@@ -297,19 +302,17 @@ async def minus_handler(call: types.CallbackQuery, state: FSMContext):
             menu_name = f""
             products = InlineKeyboardMarkup(row_width=2)
 
-            for product in menuu:
-                if lang[3] == "uz":
-                    menu_name = f"😋 {product['menu']} Menyu"
-                else:
-                    menu_name = f"😋 {product['menu']} Меню"
-                products.insert(
-                    InlineKeyboardButton(text=f"{product['food_name']}", callback_data=f"{product['food_name']}"))
             if lang[3] == "uz":
+                menu_name = f"😋 {data['menu_name']} Menyu"
                 products.insert(InlineKeyboardButton(text=f"⬅️ Ortga", callback_data=f'back_menu_{menu_name[1:-6]}_uz'))
                 products.insert(InlineKeyboardButton(text=f"🏘 Asosiy menyu", callback_data='main_menu'))
             else:
+                menu_name = f"😋 {data['menu_name']} Меню"
                 products.insert(InlineKeyboardButton(text=f"⬅️ Назад", callback_data=f'back_menu_{menu_name[1:-6]}_ru'))
                 products.insert(InlineKeyboardButton(text=f"🏘 Главное меню", callback_data='back_main_menu_ru'))
+            for product in menuu:
+                products.insert(
+                    InlineKeyboardButton(text=f"{product['food_name']}", callback_data=f"{product['food_name']}"))
             await call.message.answer_photo(photo=menu_pic['menu_picture'], caption=menu_name, reply_markup=products)
             await state.set_state('menu')
     else:
