@@ -285,7 +285,7 @@ async def add_new_location_to_db(location_name, latitude, longitude, chat_id):
 async def bosh_curer():
     return await database.fetch_one(query=curers.select().where(curers.c.status=='Not Work'))
 
-async def select_payments(lang='uz'):
+async def select_payments(lang: str):
     return await database.fetch_all(query=payments.select().where(payments.c.status==True, payments.c.lang == lang))
 
 async def turning_off_payment(payment_name):
