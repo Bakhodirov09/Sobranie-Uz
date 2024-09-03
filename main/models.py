@@ -91,7 +91,8 @@ payments = sqlalchemy.Table(
     'payments',
     metadata,
     sqlalchemy.Column("payment_name", sqlalchemy.String),
-    sqlalchemy.Column("status", sqlalchemy.Boolean)
+    sqlalchemy.Column("status", sqlalchemy.Boolean),
+    sqlalchemy.Column('lang', sqlalchemy.String)
 )
 
 ordering = sqlalchemy.Table(

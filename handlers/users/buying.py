@@ -154,7 +154,7 @@ async def select_filial_handler(message: types.Message, state: FSMContext):
             'filial': message.text
         })
         payments_bttn = ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
-        for payment in await select_payments():
+        for payment in await select_payments(lang=lang[3]):
             if payment['payment_name'] == "Naqd" or payment['payment_name'] == "Наличные":
                 payments_bttn.insert(KeyboardButton(text=f"💸 {payment['payment_name']}"))
             else:
