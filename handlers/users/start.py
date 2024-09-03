@@ -1657,7 +1657,7 @@ async def change_payment_methods_handler(message: types.Message, state: FSMConte
 @dp.message_handler(state='setting_payment')
 async def payment_method_handler(message: types.Message, state: FSMContext):
     payments = ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
-    for payment in await select_payments():
+    for payment in await select_payments('uz'):
         payments.insert(KeyboardButton(text=f"{payment['payment_name']}"))
     payments.insert(KeyboardButton(text=f"❌ Bekor Qilish"))
     if message.text[0] == "🚫":

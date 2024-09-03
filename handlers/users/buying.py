@@ -208,7 +208,7 @@ async def get_location_handler(message: types.Message, state: FSMContext):
                                              latitude=data['latitude'], longitude=data["longitude"],
                                              chat_id=data['chat_id'])
                 payments_bttn = ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
-                for payment in await select_payments():
+                for payment in await select_payments(lang=lang['lang']):
                     if payment['payment_name'] == "Naqd" or payment['payment_name'] == "Наличные":
                         payments_bttn.insert(KeyboardButton(text=f"💸 {payment['payment_name']}"))
                     else:
@@ -291,7 +291,7 @@ async def get_loc_long_lat_handler(message: types.Message, state: FSMContext):
         is_true = await check_km(km=f"{distance2[0]}", total=count)
         if is_true == True:
             payments = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-            for pay in await select_payments():
+            for pay in await select_payments(lang=lang['lang']):
                 if pay['payment_name'] == "Naqd" or pay['payment_name'] == "Наличные":
                     payments.insert(KeyboardButton(text=f"💸 {pay['payment_name']}"))
                 else:
