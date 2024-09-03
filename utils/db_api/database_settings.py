@@ -293,11 +293,16 @@ async def turning_off_payment(payment_name):
         status=False
     ).where(payments.c.payment_name==payment_name))
 
-async def add_payment_method(new_payment_name):
-    return await database.execute(query=payments.insert().values(
-        payment_name=new_payment_name,
+async def add_payment_method(data):
+    await database.execute(query=payments.insert().values(
+        payment_name=data['name_uz'],
         status=True
     ))
+    await database.execute(query=payments.insert().values(
+        payment_name=data['name_ru'],
+        status=True
+    ))
+    return True
 
 async def delete_payment(payment_name):
     return await database.execute(query=payments.delete().where(payments.c.payment_name==payment_name))

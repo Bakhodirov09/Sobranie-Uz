@@ -1708,13 +1708,20 @@ async def turning_off_handler(message: types.Message, state: FSMContext):
 @dp.message_handler(state='new_payment_method_name')
 async def turning_off_handler(message: types.Message, state: FSMContext):
     adminga = f""
-    try:
-        await add_payment_method(new_payment_name=message.text)
-        adminga = f"🥳 Yangi to'lov turi qoshildi"
-    except Exception as e:
-        await dp.bot.send_message(chat_id=-1002075245072, text=f"Error: <b>{e}</b> Bot: <b>Sobranie</b>")
-        adminga = f"😔 Kechirasiz botda xatolik yuz berdi iltimos qayta urinib ko'ring."
-    await message.answer(text=adminga, reply_markup=admins_panel)
+    await state.update_data({
+        'name_uz': message.text
+    })
+    await message.answer(text=f"🇷🇺✍️ Yangi to'lov turi nomini rus tilida kiriting.", reply_markup=cancel_uz)
+    await state.set_state('new_payment_method_name_ru')
+
+@dp.message_handler(state='new_payment_method_name_ru')
+async def new_payment_method_name_ru_handler(message: types.Message, state: FSMContext):
+    await state.update_data({
+        'name_ru': message.text
+    })
+    data = await state.get_data()
+    await add_payment_method(data=data)
+    await message.answer(text=f"✅ Yangi to'lov turi qoshildi", reply_markup=admins_panel)
     await state.finish()
 
 
