@@ -36,7 +36,7 @@ async def plus_minus_def_ru(now: int, price: int, back_bttn):
                 InlineKeyboardButton(text=f'➕', callback_data='plus'),
             ],
             [
-                InlineKeyboardButton(text='⬅️ Вернуться в меню', callback_data=f'back_the_menu_{back_bttn}_ru')
+                InlineKeyboardButton(text='⬅️ Вернуться в меню', callback_data=f'back_the_menu_{back_bttn}_ru'),
                 InlineKeyboardButton(text='📥 Корзина', callback_data='basket_ru')
             ]
         ]
